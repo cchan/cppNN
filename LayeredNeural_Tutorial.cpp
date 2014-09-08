@@ -8,38 +8,22 @@
 
 using namespace std;
 
-/*inline double getNanoTime(){
-	// Counter
-	struct { __int32 low, high; } counter;
-
-	// Use RDTSC instruction to get clocks count
-	__asm push EAX
-	__asm push EDX
-	__asm __emit 0fh __asm __emit 031h // RDTSC
-	__asm mov counter.low, EAX
-	__asm mov counter.high, EDX
-	__asm pop EDX
-	__asm pop EAX
-
-	(double)(*(__int64 *)(&counter)) / (double)1333e6;
-}*/
-
 double randDist(std::uniform_real_distribution<double> d){
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	double p = d(gen);
-	//cout << p << " ";
+	//cout << "(("<< p <<"))";
 	return p;
 }
 double randStart(){
 	static std::uniform_real_distribution<double> d(-1.0, 1.0);
-	return randDist(d) * 2 - 1;
+	return randDist(d);
 }
 double randMut(double r = -1.0){
-	static double range = 0.5;
-	if (r > 0.0)range = r;
-	static std::uniform_real_distribution<double> d(-range, range);//wtf seemingly nonrandom.
-	return randDist(d) / 10.0;
+	static double range = 1.0;
+	if (r > 0.0 && r <= 1.0)range = r;
+	static std::uniform_real_distribution<double> d(-range, range);
+	return randDist(d);
 }
 
 
@@ -57,7 +41,7 @@ vector<vector<bool> > getTestdata(int tests, int testsize){
 }
 
 class Neuron{
-private:
+public:
 	int size;
 	vector<double> weights;
 	Neuron(){}
@@ -66,7 +50,7 @@ public:
 		size = InputLayerSize;
 		for (int i = 0; i < size+1; i++) weights.push_back(randStart());
 	}
-	bool getBool(vector<bool> prevLayer){//Why is this taking like 0.5ms?
+	bool getBool(vector<bool> prevLayer){
 		double value = 0;
 		//assert(prevLayer.size() == size && weights.size() - 1 == size);
 		for (int i = 0; i < size; i++) if (prevLayer[i]) value += weights[i];
@@ -82,7 +66,7 @@ public:
 	}
 };
 class NeuronLayer{
-private:
+public:
 	vector<Neuron> neurons;
 	NeuronLayer(){}
 public:
@@ -108,27 +92,23 @@ public:
 };
 class NeuralNetwork{
 private:
-	int score;
 	int inputSize;
 	vector<int> sizes;
 	vector<NeuronLayer> nlayers;
 	NeuralNetwork(int is, vector<int> s, vector<NeuronLayer> n){
-		score = -1;
 		inputSize = is;
 		sizes = s;
 		nlayers = n;
 	}
 public:
 	NeuralNetwork(int is, vector<int> s){
-		score = -1;
 		inputSize = is;
 		sizes = s;
 		for (int i = 0; i < sizes.size(); i++)
 			nlayers.push_back(NeuronLayer(i==0? inputSize : sizes[i-1], sizes[i]));
 	}
 	int getScore(vector<vector<bool> > testdata, vector<bool> correct){
-		if (score >= 0) return score;
-		score = 0;
+		int score = 0;
 		for (int i = 0; i < testdata.size(); i++)//(Constant testdata between all things)
 			if (correct[i] == getBools(testdata[i])[0]) score++; //Uses only the first neuron in the last layer.
 		return score;
@@ -139,16 +119,17 @@ public:
 		return prev;
 	}
 	NeuralNetwork getMutated(){
-		score = -1;
 		vector<NeuronLayer> n;
 		for (int i = 0; i < nlayers.size(); i++)
 			n.push_back(nlayers[i].getMutated());
+		cout << n[0].neurons[0].weights[0] << " ";
 		return NeuralNetwork(inputSize, sizes, n);
 	}
 };
 
 bool correctFunction(vector<bool>b){
-	return true;
+	return b[0];
+
 	int sum = 0;
 	for (int i = 0; i < b.size(); i++)if(b[i])sum++;
 	return sum > b.size() / 2;
@@ -157,11 +138,11 @@ bool correctFunction(vector<bool>b){
 
 
 int main(){
-	vector<int>sizes = { 10, 10, 10, 1 };
-	int inputSize = 20;//How many bools in the vector<bool> tested on. Probably proportional to overall time.
+	vector<int>sizes = { 10, 1 };
+	int inputSize = 2;//How many bools in the vector<bool> tested on. Slightly proportional to overall time.
 	int netsPerGeneration = 10;//Number of networks per generation. Proportional to overall time.
 	int generations = 20;//Number of generations. Proportional to overall time.
-	int tests = 20;//Number of tests applied to a generation. Proportional to overall time.
+	int tests = 20;//Number of tests applied to each member of a generation. Proportional to overall time.
 
 	vector<vector<bool> > td;
 	vector<bool> correct;
@@ -183,16 +164,19 @@ int main(){
 		for (int i = 0; i < td.size(); i++)
 			correct.push_back(correctFunction(td[i]));
 
-		int best = 0;
-		cout << "Scores (out of " << tests << "): " << nets[0].getScore(td, correct);
-		for (int i = 1; i < netsPerGeneration; i++){
-			if (nets[i].getScore(td,correct) > nets[best].getScore(td,correct))
-				best = i;
-			cout << " " << nets[i].getScore(td,correct);
+		vector<int> scores;
+		cout << "Scores (out of " << tests << "): ";
+		for (int i = 0; i < netsPerGeneration; i++){
+			scores.push_back(nets[i].getScore(td, correct));
+			cout << " " << scores[i];
 		}
+		int best = 0;
+		for (int i = 1; i < netsPerGeneration; i++)
+			if (scores[i] > scores[best])
+				best = i;
 		cout << ". Mutating... ";
 
-		randMut(1.0 / n);//It gets more and more precise. (Sets randMut plus/minus)
+		randMut(1.0 / (n+1));//It gets more and more precise. (Sets randMut plus/minus)
 		newnets.push_back(nets[best]);//Keep the best.
 		for (int i = 0; i < 9; i++)//Mutate the best.
 			newnets.push_back(nets[best].getMutated());
