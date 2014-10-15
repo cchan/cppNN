@@ -4,7 +4,7 @@ class brain{
 //takes in array of doubles, outputs array of doubles
 
 
-//Swarming?
+//Swarming? Swarm Wars!! :D - one decentralized swarm, one w/leader
 
 
 interface Node{
