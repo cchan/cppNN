@@ -6,24 +6,35 @@
 #include <random>
 #include <ctime>
 
+#define fori(x) for (int i = 0, fori_size = (x); i < fori_size; i++)
+#define forj(x) for (int j = 0, forj_size = (x); j < forj_size; j++)
+
 using namespace std;
 
-double randDist(std::uniform_real_distribution<double> d){
+inline double randDist(std::uniform_real_distribution<double> d){
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	double p = d(gen);
 	//cout << "(("<< p <<"))";
 	return p;
 }
-double randStart(){
+inline double randStart(){
 	static std::uniform_real_distribution<double> d(-1.0, 1.0);
 	return randDist(d);
 }
-double randMut(double r = -1.0){
+inline double randMut(double r = -1.0){
 	static double range = 1.0;
 	if (r > 0.0 && r <= 1.0)range = r;
 	static std::uniform_real_distribution<double> d(-range, range);
 	return randDist(d);
+}
+
+
+inline double squaredDistance(const vector<double>& a, const vector<double>& b){
+	double sum = 0;
+	fori(a.size())
+		sum = (a[i] - b[i]) * (a[i] - b[i]);
+	return sum;
 }
 
 
@@ -32,8 +43,10 @@ vector<vector<double> > getTestdata(int tests, int testsize){
 
 	vector<vector<double> > t;
 	vector<double> b;
-	for (int i = 0; i < tests; i++){
-		for (int j = 0; j < testsize; j++) b.push_back(randDist(d));
+	t.reserve(tests);
+	b.reserve(testsize);
+	fori(tests){
+		forj(testsize) b.push_back(randDist(d));
 		t.push_back(b);
 		b.clear();
 	}
@@ -46,14 +59,14 @@ public:
 	vector<double> weights;
 	Neuron(){}
 public:
-	Neuron(int InputLayerSize){
-		size = InputLayerSize;
-		for (int i = 0; i < size+1; i++) weights.push_back(randStart());
+	Neuron(int inputLayerSize){
+		size = inputLayerSize;
+		fori(size+1) weights.push_back(randStart());
 	}
-	double getVal(vector<double> prevLayer){
+	double getVal(const vector<double>& prevLayer){
 		double value = 0;
 		//assert(prevLayer.size() == size && weights.size() - 1 == size);
-		for (int i = 0; i < size; i++) if (prevLayer[i]) value += prevLayer[i] * weights[i];
+		fori(size) if (prevLayer[i]) value += prevLayer[i] * weights[i];
 		return thresholding(value);
 	}
 	/*
@@ -62,11 +75,11 @@ public:
 	     ________/
 	This could be an easy thresholding function - constant, except linear in the middle.
 	*/
-	double thresholding(value){
+	inline double thresholding(double value){
 		double threshold = weights[size];//THRESHOLD to compare to.
-		double width = 0.5;//WIDTH (radius) of that slant in the middle
-		double bottom = -1;//lower value
-		double top = +1;//upper value
+		const double width = 0.5;//RADIUS of that slant in the middle
+		const double bottom = -1;//lower value
+		const double top = +1;//upper value
 		
 		if(threshold - width > value) return bottom;
 		else if(threshold + width < value) return top;
@@ -76,7 +89,7 @@ public:
 		Neuron n;
 		n.size = size;
 		n.weights.reserve(size + 1);
-		for (int i = 0; i < size + 1; i++)
+		fori(size+1)
 			n.weights.push_back(weights[i] + randMut());
 		return n;
 	}
@@ -87,21 +100,21 @@ public:
 	NeuronLayer(){}
 public:
 	NeuronLayer(int prevSize, int size){
-		for (int i = 0; i < size; i++)
+		fori(size)
 			neurons.push_back(Neuron(prevSize));
 	}
-	vector<double> getVals(vector<double> prev){
+	vector<double> getVals(const vector<double>& prev){
 		//clock_t c = clock();
 		vector<double> b;
 		b.reserve(neurons.size());
-		for (int i = 0; i < neurons.size(); i++)
+		fori(neurons.size())
 			b.push_back(neurons[i].getVal(prev));
 		//cout << " (" << (clock() - c) / (CLOCKS_PER_SEC / 1000.0) << "ms) ";
 		return b;
 	}
 	NeuronLayer getMutated(){
 		NeuronLayer n;
-		for (int i = 0; i < neurons.size(); i++)
+		fori(neurons.size())
 			n.neurons.push_back(neurons[i].getMutated());
 		return n;
 	}
@@ -111,56 +124,51 @@ private:
 	int inputSize;
 	vector<int> sizes;
 	vector<NeuronLayer> nlayers;
-	NeuralNetwork(int is, vector<int> s, vector<NeuronLayer> n){
-		inputSize = is;
-		sizes = s;
-		nlayers = n;
-	}
+	NeuralNetwork(){}
 public:
-	NeuralNetwork(int is, vector<int> s){
+	NeuralNetwork(int is, const vector<int>& s){
 		inputSize = is;
 		sizes = s;
-		for (int i = 0; i < sizes.size(); i++)
+		fori(sizes.size())
 			nlayers.push_back(NeuronLayer(i==0? inputSize : sizes[i-1], sizes[i]));
 	}
-	int getScore(vector<vector<double> > testdata, vector<double> correct){
-		int score = 0;
-		for (int i = 0; i < testdata.size(); i++)//(Constant testdata between all things)
-			if (correct[i] == getVals(testdata[i])[0]) score++; //Uses only the first neuron in the last layer.
+	double getScore(const vector<vector<double> >& testdata, const vector<vector<double> >& correct){
+		double score = 0;
+		fori(testdata.size())//(Constant testdata between all things)
+			score += squaredDistance(correct[i], getVals(testdata[i]));
 		return score;
 	}
 	vector<double> getVals(vector<double> prev){
-		for (int i = 0; i < nlayers.size(); i++)
+		fori(nlayers.size())
 			prev = nlayers[i].getVals(prev);
 		return prev;
 	}
 	NeuralNetwork getMutated(){
-		vector<NeuronLayer> n;
-		for (int i = 0; i < nlayers.size(); i++)
-			n.push_back(nlayers[i].getMutated());
-		cout << n[0].neurons[0].weights[0] << " ";
-		return NeuralNetwork(inputSize, sizes, n);
+		NeuralNetwork n;
+		n.inputSize = inputSize;
+		n.sizes = sizes;
+		n.nlayers.reserve(nlayers.size());
+		fori(nlayers.size())
+			n.nlayers.push_back(nlayers[i].getMutated());
+		return n;
 	}
 };
 
-vector<double> correctFunction(vector<double>b, int size){
-	vector<double> r;
-	for (int i = 0; i<size(); i++) if(i >= b.size())r.push_back(0); else r.push_back(b[i]);
-	return r;
-	
-	/*int sum = 0;
-	for (int i = 0; i < b.size(); i++)if(b[i])sum++;
-	return sum > b.size() / 2;*/
+
+vector<double> correctFunction(vector<double> b, int outputSize){
+	b.resize(outputSize);
+	return b;
 }
 
 
 
 int main(){
-	vector<int>sizes = { 10, 10 };
-	int inputSize = 2;//How many doubles in the input double vector tested on. Slightly proportional to overall time.
-	int netsPerGeneration = 10;//Number of networks per generation. Proportional to overall time.
-	int generations = 20;//Number of generations. Proportional to overall time.
-	int tests = 20;//Number of tests applied to each member of a generation. Proportional to overall time.
+	const vector<int>sizes = { 5, 5 };
+	const int inputSize = 3;//How many doubles in the input double vector tested on. Slightly proportional to overall time.
+	const int netsPerGeneration = 5;//Number of networks per generation. Proportional to overall time.
+	const int generations = 10;//Number of generations. Proportional to overall time.
+	const int tests = 1000;//Number of tests applied to each member of a generation. Proportional to overall time.
+	const int outputSize = sizes[sizes.size() - 1];
 
 	vector<vector<double> > testdata;
 	vector<vector<double> > correct;
@@ -168,38 +176,36 @@ int main(){
 	cout << "Program execution begun. Initiating first generation..." << endl;
 
 	vector<NeuralNetwork> nets;
-	vector<NeuralNetwork> newnets;
-	for (int i = 0; i < netsPerGeneration; i++)
+	fori(netsPerGeneration)
 		nets.push_back(NeuralNetwork(inputSize,sizes));
 
 	cout << "Initiated first generation. Beginning generations..." << endl;
 
 	for (int n = 0; n < generations; n++){
 		cout << "Testing generation " << n << "... ";
-		testdata.clear();
+		
 		testdata = getTestdata(tests, inputSize);
 		correct.clear();
-		for (int i = 0; i < testdata.size(); i++)
-			correct.push_back(correctFunction(testdata[i]));
+		fori(testdata.size())
+			correct.push_back(correctFunction(testdata[i],sizes[sizes.size()-1]));
 
-		vector<int> scores;
-		cout << "Scores (out of " << tests << "): ";
-		for (int i = 0; i < netsPerGeneration; i++){
+		vector<double> scores;
+		cout << "Scores (for " << tests << " testcases): ";
+		fori(netsPerGeneration){
 			scores.push_back(nets[i].getScore(testdata, correct));
 			cout << " " << scores[i];
 		}
 		int best = 0;
-		for (int i = 1; i < netsPerGeneration; i++)
-			if (scores[i] > scores[best])
+		fori(netsPerGeneration)
+			if (scores[i] < scores[best])
 				best = i;
-		cout << ". Mutating... ";
+		cout << ". Mutating (best=" << best << ")... ";
 
 		randMut(1.0 / (n+1));//It gets more and more precise. (Sets randMut plus/minus)
-		newnets.push_back(nets[best]);//Keep the best.
-		for (int i = 0; i < 9; i++)//Mutate the best.
-			newnets.push_back(nets[best].getMutated());
-		nets = newnets;
-		newnets.clear();
+
+		fori(netsPerGeneration)//Mutate the best and fill the rest of the spots with it.
+			if (i != best)nets[i] = nets[best].getMutated();
+
 		cout << "Done mutating." << endl;
 	}
 	system("pause");
