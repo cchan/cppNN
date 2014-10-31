@@ -30,10 +30,10 @@ inline double randMut(double r = -1.0){
 }
 
 
-inline double squaredDistance(const vector<double>& a, const vector<double>& b){
+double squaredDistance(const vector<double>& a, const vector<double>& b){
 	double sum = 0;
 	fori(a.size())
-		sum = (a[i] - b[i]) * (a[i] - b[i]);
+		sum += (a[i] - b[i]) * (a[i] - b[i]);
 	return sum;
 }
 
@@ -156,7 +156,8 @@ public:
 
 
 vector<double> correctFunction(vector<double> b, int outputSize){
-	b.resize(outputSize);
+	b.clear();
+	b.resize(outputSize,0.9);
 	return b;
 }
 
@@ -164,49 +165,57 @@ vector<double> correctFunction(vector<double> b, int outputSize){
 
 int main(){
 	const vector<int>sizes = { 5, 5 };
-	const int inputSize = 3;//How many doubles in the input double vector tested on. Slightly proportional to overall time.
-	const int netsPerGeneration = 5;//Number of networks per generation. Proportional to overall time.
-	const int generations = 10;//Number of generations. Proportional to overall time.
-	const int tests = 1000;//Number of tests applied to each member of a generation. Proportional to overall time.
+	const int inputSize = 5;//How many doubles in the input vector. Slightly proportional to overall time.
+	const int netsPerGeneration = 10;//Number of networks per generation. Proportional to overall time.
+	const int generations = 100;//Number of generations. Proportional to overall time.
+	const int tests = 200;//Number of tests applied to each member of a generation. Proportional to overall time.
 	const int outputSize = sizes[sizes.size() - 1];
 
 	vector<vector<double> > testdata;
 	vector<vector<double> > correct;
+	vector<double> scores;
+	int best;
 
 	cout << "Program execution begun. Initiating first generation..." << endl;
 
 	vector<NeuralNetwork> nets;
 	fori(netsPerGeneration)
 		nets.push_back(NeuralNetwork(inputSize,sizes));
-
+	
 	cout << "Initiated first generation. Beginning generations..." << endl;
 
 	for (int n = 0; n < generations; n++){
-		cout << "Testing generation " << n << "... ";
+		cout << "Gen" << n << "... ";
 		
 		testdata = getTestdata(tests, inputSize);
 		correct.clear();
 		fori(testdata.size())
 			correct.push_back(correctFunction(testdata[i],sizes[sizes.size()-1]));
 
-		vector<double> scores;
-		cout << "Scores (for " << tests << " testcases): ";
+		scores.clear();
+		//cout << "Scores: ";
 		fori(netsPerGeneration){
 			scores.push_back(nets[i].getScore(testdata, correct));
-			cout << " " << scores[i];
+			//cout << " " << scores[i];
 		}
-		int best = 0;
+		best = 0;
+		//secondbest = 1;
 		fori(netsPerGeneration)
 			if (scores[i] < scores[best])
 				best = i;
-		cout << ". Mutating (best=" << best << ")... ";
+		//cout << ". ";
 
-		randMut(1.0 / (n+1));//It gets more and more precise. (Sets randMut plus/minus)
+		if (n < generations - 1){
+			cout << "Best = " << scores[best] << ". Mutating... ";
 
-		fori(netsPerGeneration)//Mutate the best and fill the rest of the spots with it.
-			if (i != best)nets[i] = nets[best].getMutated();
+			//randMut(1.0 / (n + 1));//It gets more and more precise. (Sets randMut plus/minus)
 
-		cout << "Done mutating." << endl;
+			fori(netsPerGeneration)//Mutate the best and fill the rest of the spots with it.
+				if (i != best)nets[i] = nets[best].getMutated();
+
+			cout << "Done." << endl;
+		}
 	}
-	system("pause");
+	cout << "Done! Best score was " << scores[best] << ". Press any key to continue.";
+	cin.get();
 }
