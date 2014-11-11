@@ -6,6 +6,11 @@
 #include <random>
 #include <ctime>
 
+//Ideas:
+//Holy s**t this is cool: https://www.youtube.com/watch?v=n1ViNeWhC24
+//class randDbl - make value-getting somewhat random.
+
+//Horrible-syntax convenience functions.
 #define fori(x) for (int i = 0, fori_size = (x); i < fori_size; i++)
 #define forj(x) for (int j = 0, forj_size = (x); j < forj_size; j++)
 
@@ -117,6 +122,8 @@ private:
 	int inputSize;
 	vector<int> sizes;
 	vector<NeuronLayer> nlayers;
+	vector<double> previousInput;
+	vector<double> previousOutput;
 	NeuralNetwork(){}
 public:
 	NeuralNetwork(int is, const vector<int>& s){
@@ -125,25 +132,14 @@ public:
 		fori(sizes.size())
 			nlayers.push_back(NeuronLayer(i==0? inputSize : sizes[i-1], sizes[i]));
 	}
-	double getScore(const vector<vector<double> >& testdata, const vector<vector<double> >& correct){
-		double score = 0;
-		fori(testdata.size())//(Constant testdata between all things)
-			score += squaredDistance(correct[i], getVals(testdata[i]));
-		return score;
+	vector<double> feedback(double score){
+
 	}
-	vector<double> getVals(vector<double> prev){
+	vector<double> getVals(vector<double> input){
 		fori(nlayers.size())
-			prev = nlayers[i].getVals(prev);
-		return prev;
-	}
-	NeuralNetwork getMutated(){
-		NeuralNetwork n;
-		n.inputSize = inputSize;
-		n.sizes = sizes;
-		n.nlayers.reserve(nlayers.size());
-		fori(nlayers.size())
-			n.nlayers.push_back(nlayers[i].getMutated());
-		return n;
+			input = nlayers[i].getVals(input);
+		previousInput = input;
+		return input;
 	}
 };
 
