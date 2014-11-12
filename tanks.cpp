@@ -2,6 +2,7 @@
 #include <random>
 #include <algorithm>
 #include <cassert>
+#include <string>
 
 using namespace std;
 
@@ -36,10 +37,13 @@ vector<double> operator-=(vector<double>& a, const vector<double>& b){
 	return a;
 }
 ostream& operator<<(ostream& out, const vector<double>& a){
+	int origprec = cout.precision();
+	cout.precision(5);	//Variation after each backprop is less than 0.1% (at least in one of the properly configured ones), so this pretty much has three sigfigs.
 	out << "[" << a[0];
 	for (int i = 1; i < a.size(); i++)
 		out << "," << a[i];
 	out << "]";
+	cout.precision(origprec);
 	return out;
 }
 
@@ -66,51 +70,87 @@ vector<double> sampleTanks(int actualpop, int sample){
 	for (int i = 0; i < tanknums.size(); i++)
 		tanknums_double[i] = tanknums[i];
 
-	tanknums_double.push_back(1);//Bias term
-
 	return tanknums_double;
 }
 
+//Interesting results:
+//For sum of scores, sum of squared scores, sum of cubed scores:
+//Given a single sample, the best thing you can possibly do in all cases is to multiply by 3/2, subtract 1.
+//Given two, multiply by 4/3, subtract 1.
+//Given three, ... etc
+
+
 int main(){
-	const int actualpop = 1000;
-	const int sample = 7;
+	const int sample = 7;//Smaller => backprop better; larger => scaling better (very influential)
+	const int actualpop = 10000; //Smaller => scaling better; larger => backprop better (not that influential)
 	const int backprop_rounds = 100000;
-	const int score_rounds = 10000;
+	const int score_rounds = 1000000;
+	cout.precision(5);
+	//cout.setf(ios::fixed, ios::floatfield);
 
 	static random_device rd;
 	static mt19937 gen(rd());
 	static uniform_real_distribution<double> preweight(-0.001, 0.001);
-
+	static int cc = 10;
 	vector<vector<double> > weightsets;
-	vector<double> weightable (sample + 1);
-		for (int i = 0; i < sample+1; i++) weightable.push_back(preweight(gen));
-	vector < double > weights871 (sample + 1, 0);
-		weights871[sample - 1] = (sample+1.0) / sample;//Multiply maximum by a factor to extend it a little bit.
-		weights871[sample] = -1;//Bias is -1
-	
-	weightsets.push_back(weightable);
-	weightsets.push_back(weights871);
+	vector<string> names;
+	vector<double> weightable(sample + 1), weightsavg2(sample + 1), weightsmaxmin(sample + 1), weights87(sample + 1), weights871(sample + 1), weights98(sample + 1), weights981(sample + 1);
+	for (int i = 0; i < sample + 1; i++) weightable[i] = preweight(gen);
+	for (int i = 0; i < sample + 1; i++) weightsavg2[i] = 2.0 / sample;
+	weightsmaxmin[0] = weightsmaxmin[sample - 1] = 1;
+	weights87[sample - 1] = (sample + 1.0) / sample;//Multiply maximum by a factor to extend it a little bit.
+	weights871 = weights87;	weights871[sample] = -1;//Bias is -1
+	weights98[sample - 1] = (sample + 2.0) / (sample + 1.0); weights98[sample] = -cc;
+	weights981 = weights98;	weights981[sample] = -(cc-1);
+	//-19.5 is the best bias for 7/1000
+
+	names.push_back("Backpropagated"); weightsets.push_back(weightable);
+	names.push_back("Avg*2"); weightsets.push_back(weightsavg2);
+	names.push_back("Max+min"); weightsets.push_back(weightsmaxmin);
+	names.push_back("Scaled Max"); weightsets.push_back(weights87);
+	names.push_back("Scaled Max -1"); weightsets.push_back(weights87);
+	names.push_back("Scaled++ Max"); weightsets.push_back(weights98);
+	names.push_back("Scaled++ Max -1"); weightsets.push_back(weights981);
 
 	vector<double> scores(weightsets.size());
 
 	for (unsigned long long n = 0; true; n++){
 		vector<double> tanks = sampleTanks(actualpop, sample);
-
+		tanks.push_back(1);//Bias term
+		
+		//assert(tanks.size() == sample + 1);
+		//assert(weightsets[0].size() == sample + 1);
+		if (n % ((backprop_rounds+score_rounds) / 80) == ((backprop_rounds+score_rounds / 80) - 1 || n == 0)) cout << '.';
 		if (n < backprop_rounds){ //Backpropagate for ? rounds
-			float learningrate = 1.0 / (40000 * (n + 1000));
-			weightsets[0] -= tanks * (weightsets[0] * tanks - 1000) * learningrate;
-			if (n % 1000 == 0) cout << n << " diff: " << (weightsets[0] * tanks - 1000) << endl;
+			float learningrate = 1.0 / (40 * actualpop * (n + actualpop));//I evidently do not understand Learning Rate properly; it's really weird what happens when I adjust.
+			weightsets[0] -= tanks * (weightsets[0] * tanks - actualpop) * learningrate;
 		}
 		else if (n < backprop_rounds + score_rounds) {//Score for ? rounds
-			for (int i = 0; i < scores.size(); i++)
-				scores[i] += abs(weightsets[i] * tanks - 1000);
+			for (int i = 0; i < scores.size(); i++){
+				double score = (weightsets[i] * tanks - actualpop);
+				scores[i] += abs(score); // Interestingly, with squared scores, in configuration 7/1000, the neuralnet's advantage over max871 is insignificant.
+			}
 		}
 		else
 			break;
 	}
 
-	cout << endl << 100*(1 - scores[0] / scores[1]) << "% better than max871" << endl << weightsets[0];
+	int minind = 0;
+	double minscore = scores[0];
+	for (int i = 1; i < weightsets.size(); i++)
+		if (minscore > scores[i]){ minind = i; minscore = scores[i]; }
+	for (int i = 0; i < weightsets.size(); i++)
+		if (i == minind)
+			cout << names[i] << ": minimum" << endl;
+		else
+			cout << names[i] << ": +" << ((scores[i]/minscore - 1)*100) << "%" << endl;
+
+	cout << "Backprop weights:" << endl << weightsets[0] << endl;
+
+	cout << "cc is " << cc <<endl;
 	cin.get();
 
+	cc++;
+	main();
 	return 0;
 }
