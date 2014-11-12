@@ -91,7 +91,7 @@ int main(){
 	static random_device rd;
 	static mt19937 gen(rd());
 	static uniform_real_distribution<double> preweight(-0.001, 0.001);
-	static int cc = 10;
+	static int weights98bias = 10;
 	vector<vector<double> > weightsets;
 	vector<string> names;
 	vector<double> weightable(sample + 1), weightsavg2(sample + 1), weightsmaxmin(sample + 1), weights87(sample + 1), weights871(sample + 1), weights98(sample + 1), weights981(sample + 1);
@@ -100,8 +100,8 @@ int main(){
 	weightsmaxmin[0] = weightsmaxmin[sample - 1] = 1;
 	weights87[sample - 1] = (sample + 1.0) / sample;//Multiply maximum by a factor to extend it a little bit.
 	weights871 = weights87;	weights871[sample] = -1;//Bias is -1
-	weights98[sample - 1] = (sample + 2.0) / (sample + 1.0); weights98[sample] = -cc;
-	weights981 = weights98;	weights981[sample] = -(cc-1);
+	weights98[sample - 1] = (sample + 2.0) / (sample + 1.0); weights98[sample] = -weights98bias;
+	weights981 = weights98;	weights981[sample] = -(weights98bias-1);
 	//-19.5 is the best bias for 7/1000
 
 	names.push_back("Backpropagated"); weightsets.push_back(weightable);
@@ -147,10 +147,10 @@ int main(){
 
 	cout << "Backprop weights:" << endl << weightsets[0] << endl;
 
-	cout << "cc is " << cc <<endl;
+	cout << "weights98bias is " << weights98bias <<endl;
 	cin.get();
 
-	cc++;
+	weights98bias++;
 	main();
 	return 0;
 }
