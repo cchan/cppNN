@@ -81,8 +81,9 @@ vector<double> sampleTanks(int actualpop, int sample){
 
 
 int main(){
+	static double weights98bias = 0;//~19.5 is the best for 7/1000. 190 is the best for 7/10000.
 	const int sample = 7;//Smaller => backprop better; larger => scaling better (very influential)
-	const int actualpop = 10000; //Smaller => scaling better; larger => backprop better (not that influential)
+	const int actualpop = 1000; //Smaller => scaling better; larger => backprop better (not that influential)
 	const int backprop_rounds = 100000;
 	const int score_rounds = 1000000;
 	cout.precision(5);
@@ -91,7 +92,7 @@ int main(){
 	static random_device rd;
 	static mt19937 gen(rd());
 	static uniform_real_distribution<double> preweight(-0.001, 0.001);
-	static int weights98bias = 10;
+
 	vector<vector<double> > weightsets;
 	vector<string> names;
 	vector<double> weightable(sample + 1), weightsavg2(sample + 1), weightsmaxmin(sample + 1), weights87(sample + 1), weights871(sample + 1), weights98(sample + 1), weights981(sample + 1);
@@ -109,12 +110,16 @@ int main(){
 	names.push_back("Max+min"); weightsets.push_back(weightsmaxmin);
 	names.push_back("Scaled Max"); weightsets.push_back(weights87);
 	names.push_back("Scaled Max -1"); weightsets.push_back(weights87);
-	names.push_back("Scaled++ Max"); weightsets.push_back(weights98);
-	names.push_back("Scaled++ Max -1"); weightsets.push_back(weights981);
+	names.push_back("Scaled++ Max, bias -" + to_string(weights98bias)); weightsets.push_back(weights98);
+	names.push_back("Scaled++ Max, bias -" + to_string(weights98bias-1)); weightsets.push_back(weights981);
 
 	vector<double> scores(weightsets.size());
 
 	for (unsigned long long n = 0; true; n++){
+		//weights98bias++;
+		weightsets[6][sample] = (weightsets[5][sample] = -weights98bias) + 1;
+		names[5]=("Scaled++ Max, bias -" + to_string(weightsets[5][sample]));
+		names[6]=("Scaled++ Max, bias -" + to_string(weightsets[6][sample]));
 		vector<double> tanks = sampleTanks(actualpop, sample);
 		tanks.push_back(1);//Bias term
 		
@@ -124,6 +129,7 @@ int main(){
 		if (n < backprop_rounds){ //Backpropagate for ? rounds
 			float learningrate = 1.0 / (40 * actualpop * (n + actualpop));//I evidently do not understand Learning Rate properly; it's really weird what happens when I adjust.
 			weightsets[0] -= tanks * (weightsets[0] * tanks - actualpop) * learningrate;
+			//               ^^^^^ Is it actually 'tanks' or is it delta?
 		}
 		else if (n < backprop_rounds + score_rounds) {//Score for ? rounds
 			for (int i = 0; i < scores.size(); i++){
@@ -147,10 +153,8 @@ int main(){
 
 	cout << "Backprop weights:" << endl << weightsets[0] << endl;
 
-	cout << "weights98bias is " << weights98bias <<endl;
 	cin.get();
 
-	weights98bias++;
 	main();
 	return 0;
 }

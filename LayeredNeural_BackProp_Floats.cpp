@@ -97,6 +97,10 @@ public:
 		fori(size)
 			neurons.push_back(Neuron(prevSize));
 	}
+	void feedback(vector<double>& input, vector<double>& delta, double score){
+		//score determines the learning rate -- score between 0 and 1 (0 is nothing, 1 is really, really off)
+		//Will stuff work the same way, since it's not linear backprop anymore? I need the derivative.
+	}
 	vector<double> getVals(const vector<double>& prev){
 		//clock_t c = clock();
 		vector<double> b;
@@ -128,8 +132,12 @@ public:
 		fori(sizes.size())
 			nlayers.push_back(NeuronLayer(i==0? inputSize : sizes[i-1], sizes[i]));
 	}
-	vector<double> feedback(double score){
-
+	void feedback(vector<double> input, vector<double> delta, double(*scorer)(vector<double> input,vector<double> output)){
+		vector<double> output;
+		fori(nlayers.size()){
+			output = nlayers[i].getVals(input);
+			nlayers[i].feedback(input, delta, scorer(input,output));
+		}
 	}
 	vector<double> getVals(vector<double> input){
 		fori(nlayers.size())
