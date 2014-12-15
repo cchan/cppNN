@@ -13,7 +13,7 @@ using namespace std;
 
 double rand11();
 vector<double> correctFunction(vector<double> b, size_t outputSize);
-vector<double> getTestdata(size_t inputSize);
+vector<double> getTestdata(size_t inputSize, double(*randfunc)());
 
 int main(){
 	const vector<size_t>sizes = { 5, 5, 5, 5, 5 }; //Sizes of layers in the network.
@@ -30,9 +30,10 @@ int main(){
 
 	for (size_t n = 0; n < backprops; n++){
 		//if(n%10==0)cout << n << endl;
-		testdata = getTestdata(inputSize);
-		delta = - nn.frontprop(testdata) + correctFunction(testdata, outputSize);
-		if (n % 100 == 0) cout << testdata << " => " << nn.frontprop(testdata) << endl << endl;
+		testdata = getTestdata(inputSize, rand11);
+		vector<double> f = nn.frontprop(testdata);
+		delta = - f + correctFunction(testdata, outputSize);
+		if (n % 100 == 0) cout << testdata << " => " << f << endl << endl;
 		nn.backprop(delta);
 	}
 	cout << "Done! Best delta was " << delta << "." << endl;
@@ -41,14 +42,11 @@ int main(){
 	cin.get();
 }
 
-mt19937 randgen(){
+double rand11(){
 	static random_device rd;
 	static mt19937 gen(rd());
-	return gen;
-}
-double rand11(){
 	static uniform_real_distribution<double> d(-1.0, 1.0);
-	return d(randgen());
+	return d(gen);
 }
 vector<double> correctFunction(vector<double> b, size_t outputSize){
 	double sum = 0;
@@ -58,10 +56,10 @@ vector<double> correctFunction(vector<double> b, size_t outputSize){
 	o[0] = sum / 100.0;
 	return o;
 }
-vector<double> getTestdata(size_t inputSize){
+vector<double> getTestdata(size_t inputSize, double(*randfunc)()){
 	vector<double> b;
 	b.reserve(inputSize);
-	fori(inputSize) b.push_back(rand11());
+	fori(inputSize) b.push_back(randfunc());
 	return b;
 }
 

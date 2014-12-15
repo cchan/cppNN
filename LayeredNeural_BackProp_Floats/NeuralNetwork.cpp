@@ -22,13 +22,13 @@ void NeuralNetwork::backprop(std::vector<double> outputdelta){
 		activity.push_back(1);
 
 		nlayers[i].callback([outputdelta, learningRate, activity](const size_t i, const size_t j, double& oldValue){
-			oldValue += learningRate * outputdelta[i] * activity[j];
+			oldValue -= learningRate * outputdelta[i] * activity[j];
 		});
-		nlayers[i].biases += learningRate * outputdelta;
+		nlayers[i].biases -= learningRate * outputdelta;
 
-		//std::cout << outputdelta;
+		if (i==0)std::cout <<"["<< outputdelta;
 
-		outputdelta = - hadamardProduct(nlayers[i].transposeMultiply(outputdelta), thresholding_prime(prevActivations[i]));
+		outputdelta = hadamardProduct(nlayers[i].transposeMultiply(outputdelta), thresholding_prime(prevActivations[i]));
 	}
 }
 std::vector<double> NeuralNetwork::frontprop(std::vector<double> input){
