@@ -15,18 +15,18 @@ NeuralNetwork::NeuralNetwork(const size_t is, const std::vector<size_t>& s, doub
 void NeuralNetwork::backprop(std::vector<double> outputdelta){
 	//Based on heavy reading from http://www.willamette.edu/~gorr/classes/cs449/backprop.html
 
-	const double learningRate = 0.04;
+	const double learningRate = 0.02;//Anneal this.
+	std::vector<double> activity;
 
 	for (int i = nlayers.size() - 1; i >= 0; i--){
-		std::vector<double> activity = prevActivations[i];
-		activity.push_back(1);
-
+		activity = prevActivations[i];
+		
 		nlayers[i].callback([outputdelta, learningRate, activity](const size_t i, const size_t j, double& oldValue){
-			oldValue -= learningRate * outputdelta[i] * activity[j];
+			oldValue += learningRate * outputdelta[i] * activity[j];
 		});
-		nlayers[i].biases -= learningRate * outputdelta;
+		nlayers[i].biases += learningRate * outputdelta;
 
-		if (i==0)std::cout <<"["<< outputdelta;
+		if (i == nlayers.size()-1)std::cout << "[" << outputdelta;
 
 		outputdelta = hadamardProduct(nlayers[i].transposeMultiply(outputdelta), thresholding_prime(prevActivations[i]));
 	}

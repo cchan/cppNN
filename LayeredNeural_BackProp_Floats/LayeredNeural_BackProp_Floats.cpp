@@ -16,27 +16,35 @@ vector<double> correctFunction(vector<double> b, size_t outputSize);
 vector<double> getTestdata(size_t inputSize, double(*randfunc)());
 
 int main(){
-	const vector<size_t>sizes = { 5, 5, 5, 5, 5 }; //Sizes of layers in the network.
+	const vector<size_t>sizes = { 5 }; //Sizes of layers in the network.
 	const size_t inputSize = 5;//How many doubles in the input vector. Slightly proportional to overall time.
-	const size_t backprops = 5000;//Number of backpropagations. Proportional to overall time.
+	const size_t backprops = 500;//Number of backpropagations. Proportional to overall time.
 	const size_t outputSize = sizes[sizes.size() - 1];
 
-	vector<double> testdata;
-	vector<double> delta;
+	vector<double> testdata, delta, f;
 
 	NeuralNetwork nn(inputSize, sizes, rand11);
 
 	cout << "Program execution begun." << endl;
 
+	testdata = getTestdata(inputSize, rand11);
+	cout << "testdata:\n" << testdata << endl << endl;
+	cout << "correct:\n" << correctFunction(testdata, outputSize) << endl << endl;
+	cout << "frontprop:\n" << nn.frontprop(testdata) << endl << endl;
+	cout << "layer weights:\n" << nn.nlayers[0] << endl << endl;
+	cout << "sum of activations:\n" << nn.nlayers[0] * testdata << endl << endl;
+	cin.get();
+	return 0;
+
 	for (size_t n = 0; n < backprops; n++){
 		//if(n%10==0)cout << n << endl;
 		testdata = getTestdata(inputSize, rand11);
-		vector<double> f = nn.frontprop(testdata);
-		delta = - f + correctFunction(testdata, outputSize);
+		f = nn.frontprop(testdata);
+		delta = f - correctFunction(testdata, outputSize);
 		if (n % 100 == 0) cout << testdata << " => " << f << endl << endl;
 		nn.backprop(delta);
 	}
-	cout << "Done! Best delta was " << delta << "." << endl;
+	cout << "Done! Best delta was " << testdata << " => " << f << "." << endl << endl << endl;
 	for (AffineMatrix<double> a : nn.nlayers)
 		cout << a << '[' << a.b() << ']' << endl << endl;
 	cin.get();
@@ -49,12 +57,9 @@ double rand11(){
 	return d(gen);
 }
 vector<double> correctFunction(vector<double> b, size_t outputSize){
-	double sum = 0;
-	for (double d : b)sum += d;
-
-	vector<double> o(outputSize, 0.0);
-	o[0] = sum / 100.0;
-	return o;
+	b.resize(1);
+	b.resize(outputSize);
+	return b;
 }
 vector<double> getTestdata(size_t inputSize, double(*randfunc)()){
 	vector<double> b;
