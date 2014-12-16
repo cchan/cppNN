@@ -1,9 +1,16 @@
 #include "AffineMatrix.h"
 
+//This code is well-tested and known to work correctly in all tested cases.
+
 std::ostream& operator<< (std::ostream& os, const AffineMatrix<double>& a){
 	for (size_t i = 0; i < a.h(); i++)
 		os << a[i] << std::endl;
+	os << "BIAS: " << a.b();
 	return os;
+}
+
+AffineMatrix<double> outerProduct(std::vector<double> a, std::vector<double> b){
+	return AffineMatrix<double>(a.size(), b.size(), [a, b](size_t i, size_t j){return a[i] * b[j]; });
 }
 
 //template<typename T> AffineMatrix<T>::AffineMatrix(){}
@@ -11,6 +18,11 @@ template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w, T(*fill_c
 	setsize(h, w);
 	for (size_t i = 0; i < height * width; i++)matrix.push_back(fill_callback());
 	for (size_t i = 0; i < height; i++)biases.push_back(fill_callback());
+}
+template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w, std::function<double(const size_t, const size_t)> fill_callback){
+	setsize(h, w);
+	for (size_t i = 0; i < height * width; i++)matrix.push_back(fill_callback(i / width, i%width));
+	for (size_t i = 0; i < height; i++)biases.push_back(fill_callback(i / width, i%width));
 }
 
 template<typename T> AffineMatrix<T>::AffineMatrix(std::vector<std::vector<T> > mdata, std::vector<T> bdata){

@@ -1,6 +1,7 @@
 #include "Vectors.h"
 
 std::ostream& operator<< (std::ostream& os, const std::vector<double>& v){
+	if (v.size() == 0)os << "{}";
 	os << '{' << v[0];
 	for (size_t i = 1; i < v.size(); i++)
 		os << ',' << v[i];

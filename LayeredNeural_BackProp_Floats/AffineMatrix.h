@@ -14,6 +14,7 @@ public:
 	void setsize(size_t h, size_t w);
 public:
 	AffineMatrix(size_t h, size_t w, T(*fill_callback)());
+	AffineMatrix(size_t h, size_t w, std::function<double(const size_t, const size_t)> fill_callback);
 	AffineMatrix(std::vector<std::vector<T> > mdata, std::vector<T> bdata);
 
 	size_t h() const{ return height; };
@@ -26,3 +27,4 @@ public:
 };
 
 std::ostream& operator<< (std::ostream& os, const AffineMatrix<double>& a);
+AffineMatrix<double> outerProduct(std::vector<double> a, std::vector<double> b);

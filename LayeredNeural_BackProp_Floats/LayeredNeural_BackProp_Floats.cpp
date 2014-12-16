@@ -16,7 +16,7 @@ vector<double> correctFunction(vector<double> b, size_t outputSize);
 vector<double> getTestdata(size_t inputSize, double(*randfunc)());
 
 int main(){
-	const vector<size_t>sizes = { 5 }; //Sizes of layers in the network.
+	const vector<size_t>sizes = { 3 }; //Sizes of layers in the network.
 	const size_t inputSize = 5;//How many doubles in the input vector. Slightly proportional to overall time.
 	const size_t backprops = 500;//Number of backpropagations. Proportional to overall time.
 	const size_t outputSize = sizes[sizes.size() - 1];
@@ -29,15 +29,16 @@ int main(){
 
 	testdata = getTestdata(inputSize, rand11);
 	cout << "testdata:\n" << testdata << endl << endl;
-	cout << "correct:\n" << correctFunction(testdata, outputSize) << endl << endl;
+	cout << "layer affinematrix:\n" << nn.nlayers[0] << endl << endl;
+	cout << "sum of activations:\n" << (nn.nlayers[0] * testdata) << endl << endl;
 	cout << "frontprop:\n" << nn.frontprop(testdata) << endl << endl;
-	cout << "layer weights:\n" << nn.nlayers[0] << endl << endl;
-	cout << "sum of activations:\n" << nn.nlayers[0] * testdata << endl << endl;
-	cin.get();
-	return 0;
+	cout << "correct:\n" << correctFunction(testdata, outputSize) << endl << endl;
+	cout << "delta:\n" << (nn.frontprop(testdata) - correctFunction(testdata, outputSize)) << endl << endl;
+	cout << "outer product (activations, delta):\n" << outerProduct(nn.nlayers[0] * testdata, (nn.frontprop(testdata) - correctFunction(testdata, outputSize)));
+
+	cin.get(); return 0;
 
 	for (size_t n = 0; n < backprops; n++){
-		//if(n%10==0)cout << n << endl;
 		testdata = getTestdata(inputSize, rand11);
 		f = nn.frontprop(testdata);
 		delta = f - correctFunction(testdata, outputSize);
