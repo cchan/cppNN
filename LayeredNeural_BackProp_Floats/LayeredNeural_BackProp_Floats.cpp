@@ -1,9 +1,8 @@
 #include <iostream>
-#include <vector>
-#include <random>
 
-#include "NeuralNetwork.h"
+#include "rand11.h"
 #include "Vectors.h"
+#include "NeuralNetwork.h"
 
 //Horrible-syntax convenience functions.
 #define fori(x) for (size_t i = 0, fori_size = (x); i < fori_size; i++)
@@ -11,61 +10,46 @@
 
 using namespace std;
 
-double rand11();
 vector<double> correctFunction(vector<double> b, size_t outputSize);
-vector<double> getTestdata(size_t inputSize, double(*randfunc)());
+vector<double> getTestdata(size_t inputSize);
 
 int main(){
-	const vector<size_t>sizes = { 3 }; //Sizes of layers in the network.
+	const vector<size_t>sizes = { 5, 5 }; //Sizes of layers in the network.
 	const size_t inputSize = 5;//How many doubles in the input vector. Slightly proportional to overall time.
-	const size_t backprops = 500;//Number of backpropagations. Proportional to overall time.
 	const size_t outputSize = sizes[sizes.size() - 1];
 
-	vector<double> testdata, delta, f;
-
-	NeuralNetwork nn(inputSize, sizes, rand11);
+	const size_t backprops = 100000;//Number of backpropagations. Proportional to overall time. (REMEMBER TO SWITCH TO RELEASE CONFIG FOR ~20x SPEED!)
+	const double annealingRate = 1.00001;//Different for different applications.
 
 	cout << "Program execution begun." << endl;
 
-	testdata = getTestdata(inputSize, rand11);
-	cout << "testdata:\n" << testdata << endl << endl;
-	cout << "layer affinematrix:\n" << nn.nlayers[0] << endl << endl;
-	cout << "sum of activations:\n" << (nn.nlayers[0] * testdata) << endl << endl;
-	cout << "frontprop:\n" << nn.frontprop(testdata) << endl << endl;
-	cout << "correct:\n" << correctFunction(testdata, outputSize) << endl << endl;
-	cout << "delta:\n" << (nn.frontprop(testdata) - correctFunction(testdata, outputSize)) << endl << endl;
-	cout << "outer product (activations, delta):\n" << outerProduct(nn.nlayers[0] * testdata, (nn.frontprop(testdata) - correctFunction(testdata, outputSize)));
+	NeuralNetwork nn(inputSize, sizes, annealingRate);
+	nn.randInit();
 
-	cin.get(); return 0;
-
+	vector<double> testdata;
 	for (size_t n = 0; n < backprops; n++){
-		testdata = getTestdata(inputSize, rand11);
-		f = nn.frontprop(testdata);
-		delta = f - correctFunction(testdata, outputSize);
-		if (n % 100 == 0) cout << testdata << " => " << f << endl << endl;
-		nn.backprop(delta);
+		testdata = getTestdata(inputSize);
+		if (n % 1000 == 0)
+			cout << correctFunction(testdata, outputSize) - nn.backprop(testdata, correctFunction(testdata, outputSize)) << endl;
+		else
+			nn.backprop(testdata, correctFunction(testdata, outputSize));
 	}
-	cout << "Done! Best delta was " << testdata << " => " << f << "." << endl << endl << endl;
-	for (AffineMatrix<double> a : nn.nlayers)
-		cout << a << '[' << a.b() << ']' << endl << endl;
+	cout << "Done! Last delta was " << (correctFunction(testdata, outputSize) - nn.frontprop(testdata)) << ".\n\n\n";
+	for (size_t i = 0; i < sizes.size(); i++)
+		cout << nn[i] << endl;
 	cin.get();
 }
 
-double rand11(){
-	static random_device rd;
-	static mt19937 gen(rd());
-	static uniform_real_distribution<double> d(-1.0, 1.0);
-	return d(gen);
-}
+
 vector<double> correctFunction(vector<double> b, size_t outputSize){
-	b.resize(1);
+	b.resize(0);
 	b.resize(outputSize);
 	return b;
 }
-vector<double> getTestdata(size_t inputSize, double(*randfunc)()){
+vector<double> getTestdata(size_t inputSize){
 	vector<double> b;
 	b.reserve(inputSize);
-	fori(inputSize) b.push_back(randfunc());
+	fori(inputSize) b.push_back(rand11());
 	return b;
 }
 

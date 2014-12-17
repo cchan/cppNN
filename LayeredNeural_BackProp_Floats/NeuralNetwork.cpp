@@ -1,40 +1,64 @@
 #include "NeuralNetwork.h"
-#include <iostream>
 
-NeuralNetwork::NeuralNetwork(const size_t is, const std::vector<size_t>& s, double(*weightsInit)()){
+NeuralNetwork::NeuralNetwork(const size_t is, const std::vector<size_t>& s, double ar){
+	learningRate = 0.5; //Default; will be annealed.
+	annealingRate = ar;
 	inputSize = is;
 	sizes = s;
 	nlayers.reserve(sizes.size());
 	for (size_t i = 0; i < sizes.size(); i++)
-		nlayers.push_back(AffineMatrix<double>(size_t(sizes[i]), i == 0 ? inputSize : sizes[i - 1], weightsInit));
-
-	prevActivations.resize(sizes.size());
-	for (size_t i = 0; i < sizes.size(); i++)
-		prevActivations[i].resize(sizes[i]);
+		nlayers.push_back(AffineMatrix<double>(size_t(sizes[i]), i == 0 ? inputSize : sizes[i - 1]));
 }
-void NeuralNetwork::backprop(std::vector<double> outputdelta){
-	//Based on heavy reading from http://www.willamette.edu/~gorr/classes/cs449/backprop.html
-
-	const double learningRate = 0.02;//Anneal this.
-	std::vector<double> activity;
-
-	for (int i = nlayers.size() - 1; i >= 0; i--){
-		activity = prevActivations[i];
-		
-		nlayers[i].callback([outputdelta, learningRate, activity](const size_t i, const size_t j, double& oldValue){
-			oldValue += learningRate * outputdelta[i] * activity[j];
-		});
-		//nlayers[i].biases += learningRate * outputdelta;
-
-		if (i == nlayers.size()-1)std::cout << "[" << outputdelta;
-
-		outputdelta = hadamardProduct(nlayers[i].transposeMultiply(outputdelta), thresholding_prime(prevActivations[i]));
-	}
+#include <iostream>
+void NeuralNetwork::randInit(){
+	for (AffineMatrix<double>& nl : nlayers)
+		nl.callback([](size_t i, size_t j, double& c){c = rand11(); });
 }
 std::vector<double> NeuralNetwork::frontprop(std::vector<double> input){
-	for (size_t i = 0; i < nlayers.size(); i++)
-		input = thresholding(prevActivations[i] = (nlayers[i] * input));
+	input = nlayers[0] * input; //Skip first thresholding
+	for (size_t i = 1; i < nlayers.size(); i++)
+		input = (nlayers[i] * thresholding(input)); //Skip last thresholding
 	return input;
+}
+
+
+
+NeuralNetwork NeuralNetwork::getRandomlyMutated(double range) const{
+	range * rand11();
+}
+NeuralNetwork NeuralNetwork::getRandomlyHybridized(const NeuralNetwork& other) const{
+	//uses random proportions of each.
+	double prop = rand11() / 2 + 1;
+	//(prop * weight + (1-prop)*other.weight)
+}
+
+
+
+std::vector<double> NeuralNetwork::backprop(std::vector<double> testdata, std::vector<double> correct){
+	//Based on heavy reading from http://www.willamette.edu/~gorr/classes/cs449/backprop.html
+	//And many hours of testing.
+
+	learningRate /= annealingRate; //Simulated Annealing, which is a fancy way of saying you make it change less as it learns more. Easy to come up with on your own :D
+
+	AffineMatrix<double> matrixdelta;
+	std::vector<std::vector<double> > activations;
+	std::vector<double> delta;
+
+	//Frontprop.
+	activations.push_back(testdata);
+	activations.push_back(nlayers[0] * testdata);
+	for (int i = 1; i < nlayers.size(); i++)
+		activations.push_back(nlayers[i] * thresholding(activations[i]));
+
+	delta = thresholding(activations[activations.size() - 1]) - correct; //This last activation is only used for the delta.
+
+	for (int i = nlayers.size() - 1; i >= 0; i--){
+		matrixdelta = affineOuterProduct(delta, activations[i]);
+		delta = hadamardProduct(nlayers[i].transposeMultiply(delta), thresholding_prime(activations[i]));
+		nlayers[i] -= learningRate * matrixdelta;
+	}
+	//std::cout << "correct: " << correct << "\nold: " << activations[activations.size() - 1] << "\nnew: " << frontprop(testdata) << "\n\n";
+	return activations[activations.size() - 1];
 }
 std::vector<double> NeuralNetwork::thresholding(std::vector<double> v){
 	std::for_each(v.begin(), v.end(), [](double& d){d = tanh(d); });

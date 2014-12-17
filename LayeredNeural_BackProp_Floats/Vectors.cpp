@@ -9,17 +9,22 @@ std::ostream& operator<< (std::ostream& os, const std::vector<double>& v){
 	return os;
 }
 
-std::vector<double> operator+(std::vector<double> a, const std::vector<double>& b){
-	for (size_t i = 0; i < a.size(); i++)a[i] += b[i];
-	return a;
+std::vector<double> operator+(const std::vector<double>& a, const std::vector<double>& b){
+	assert(a.size() == b.size());
+	std::vector<double>c;
+	for (size_t i = 0; i < a.size(); i++)c.push_back(a[i] + b[i]);
+	return c;
 }
-std::vector<double> operator-(std::vector<double> a, const std::vector<double>& b){
-	for (size_t i = 0; i < a.size(); i++)a[i] -= b[i];
-	return a;
+std::vector<double> operator-(const std::vector<double>& a, const std::vector<double>& b){
+	assert(a.size() == b.size());
+	std::vector<double>c;
+	for (size_t i = 0; i < a.size(); i++)c.push_back(a[i] - b[i]);
+	return c;
 }
-std::vector<double> operator-(std::vector<double> a){
-	for (size_t i = 0; i < a.size(); i++)a[i] = -a[i];
-	return a;
+std::vector<double> operator-(const std::vector<double>& a){
+	std::vector<double>c;
+	for (size_t i = 0; i < a.size(); i++)c.push_back(-a[i]);
+	return c;
 }
 std::vector<double> operator*(double d, std::vector<double> a){
 	for (size_t i = 0; i < a.size(); i++)a[i] *= d;
@@ -30,18 +35,23 @@ std::vector<double> operator*(std::vector<double> a, double d){
 	return a;
 }
 std::vector<double> operator+=(std::vector<double>& a, const std::vector<double>& b){
+	assert(a.size() == b.size());
 	for (size_t i = 0; i < a.size(); i++)a[i] += b[i];
 	return a;
 }
 std::vector<double> operator-=(std::vector<double>& a, const std::vector<double>& b){
+	assert(a.size() == b.size());
 	for (size_t i = 0; i < a.size(); i++)a[i] -= b[i];
 	return a;
 }
 double dotProduct(const std::vector<double>& a, const std::vector<double>& b){
+	assert(a.size() == b.size());
 	return std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
 }
-std::vector<double> hadamardProduct(std::vector<double> a, const std::vector<double>& b){
+std::vector<double> hadamardProduct(const std::vector<double>& a, const std::vector<double>& b){
+	assert(a.size() == b.size());
+	std::vector<double> c;
 	for (size_t i = 0; i < a.size(); i++)
-		a[i] *= b[i];
-	return a;
+		c.push_back(a[i] * b[i]);
+	return c;
 }
