@@ -11,9 +11,10 @@ using namespace std;
 
 //FIRST how do we do graphics?
 
-//Use Bullet and Boost.
 
-
+//how about just a block navigating thru a field of objects (points for how long it goes before it hits a wall)
+//
+//use http://nxttime.wordpress.com/2012/09/12/the-ultrasonic-sensor/ specs
 
 int main(){
 
