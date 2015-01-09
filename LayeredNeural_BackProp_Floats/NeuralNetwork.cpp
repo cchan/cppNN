@@ -23,15 +23,25 @@ std::vector<double> NeuralNetwork::frontprop(std::vector<double> input){
 
 
 
-NeuralNetwork NeuralNetwork::getRandomlyMutated(double range) const{
+NeuralNetwork NeuralNetwork::getRandomlyMutated(double range) const{ //range is used for SA
 	range * rand11();
 }
 NeuralNetwork NeuralNetwork::getRandomlyHybridized(const NeuralNetwork& other) const{
 	//uses random proportions of each.
-	double prop = rand11() / 2 + 1;
+	//assert(they're the same sizes)
+
+	NeuralNetwork thistmp(*this);
+	
+	//for each weight:
+	assert(depth() == other.depth());
+	for (size_t i = 0; i < depth(); i++){
+		thistmp.nlayers[i].callback([&other](size_t x, size_t y, double val){
+			double prop = (rand11() + 1) / 2;
+			
+		});
+	}
 	//(prop * weight + (1-prop)*other.weight)
 }
-
 
 
 std::vector<double> NeuralNetwork::backprop(std::vector<double> testdata, std::vector<double> correct){

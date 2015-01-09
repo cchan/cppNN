@@ -26,6 +26,7 @@ public:
 	AffineMatrix<T> operator+(const AffineMatrix<T>& other) const;
 	AffineMatrix<T> operator+=(const AffineMatrix<T>& other);
 	AffineMatrix<T> operator-=(const AffineMatrix<T>& other);
+	bool operator==(const AffineMatrix<T>& other) const{ return matrix == other.matrix && biases == other.biases; };
 	std::vector<T> b() const{ return biases; }
 	void b(std::vector<T> newbiases);
 	void callback(std::function<void(const size_t, const size_t, T&)> c);

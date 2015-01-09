@@ -13,7 +13,9 @@ private:
 	std::vector<AffineMatrix<double> > nlayers;
 public:
 	NeuralNetwork(const size_t is, const std::vector<size_t>& s, double ar);
-	AffineMatrix<double> operator[](size_t i){ return nlayers[i]; }
+	NeuralNetwork(const NeuralNetwork& nn){ inputSize = nn.inputSize; sizes = nn.sizes; learningRate = nn.learningRate; annealingRate = nn.annealingRate; weightmax = nn.weightmax; nlayers = nn.nlayers; }
+	size_t depth() const{ return nlayers.size(); };
+	AffineMatrix<double> operator[](size_t i){ return nlayers[i]; };
 	
 	void randInit();
 	std::vector<double> frontprop(std::vector<double> input);
