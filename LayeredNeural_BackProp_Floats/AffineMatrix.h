@@ -2,6 +2,7 @@
 #include <functional>
 #include <cassert>
 #include <ostream>
+#include "rand11.h"
 #include "Vectors.h"
 
 template<typename T> class AffineMatrix{
@@ -20,6 +21,10 @@ public:
 	AffineMatrix(std::vector<std::vector<T> > mdata, std::vector<T> bdata);
 
 	size_t h() const{ return height; };
+	size_t w() const{ return width; };
+	std::vector<T> b() const{ return biases; }
+	void b(std::vector<T> newbiases);
+
 	std::vector<T> operator*(std::vector<T> v) const;
 	std::vector<T> transposeMultiply(std::vector<T> v) const;
 	std::vector<T> operator[](size_t i) const;
@@ -27,8 +32,11 @@ public:
 	AffineMatrix<T> operator+=(const AffineMatrix<T>& other);
 	AffineMatrix<T> operator-=(const AffineMatrix<T>& other);
 	bool operator==(const AffineMatrix<T>& other) const{ return matrix == other.matrix && biases == other.biases; };
-	std::vector<T> b() const{ return biases; }
-	void b(std::vector<T> newbiases);
+	bool size_equals(const AffineMatrix<T>& other) const{ return height == other.height && width == other.width; };
+
+	AffineMatrix<T> mutate(double range) const;
+	AffineMatrix<T> hybridize(AffineMatrix<T> other) const;
+
 	void callback(std::function<void(const size_t, const size_t, T&)> c);
 };
 

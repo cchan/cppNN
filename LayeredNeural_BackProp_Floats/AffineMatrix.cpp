@@ -100,7 +100,38 @@ template<typename T> void AffineMatrix<T>::b(std::vector<T> newbiases){
 	assert(newbiases.size() == height);
 	biases = newbiases;
 }
-template<typename T> void AffineMatrix<T>::callback(std::function<void(const size_t, const size_t, T&)> c){
+
+
+template<typename T> AffineMatrix<T> AffineMatrix<T>::mutate(double range) const{
+	std::vector<T> newmatrix = matrix;
+	for (T &v : newmatrix)
+		v += rand11() * range;
+
+	std::vector<T> newbiases = biases;
+	for (T &v : newbiases)
+		v += rand11() * range;
+
+	return AffineMatrix<T>(newmatrix, newbiases);
+}
+template<typename T> AffineMatrix<T> AffineMatrix<T>::hybridize(AffineMatrix<T> other) const{
+	assert(size_equals(other));
+
+	std::vector<T> newmatrix = matrix;
+	for (int i = 0; i < newmatrix.size(); i++){
+		double prop = (rand11() + 1) / 2;
+		newmatrix[i] = prop * newmatrix[i] + (1 - prop)*other.matrix[i];
+	}
+
+	std::vector<T> newbiases = biases;
+	for (int i = 0; i < newbiases.size(); i++){
+		double prop = (rand11() + 1) / 2;
+		newbiases[i] = prop * newbiases[i] + (1 - prop)*other.biases[i];
+	}
+
+	return AffineMatrix<T>(newmatrix, newbiases);
+}
+
+template<typename T> void AffineMatrix<T>::callback(std::function<void(const size_t, const size_t, T&)> c){ //row, col, val
 	for (size_t i = 0; i < height; i++)
 		for (size_t j = 0; j < width; j++)
 			c(i, j, matrix[i*width + j]);

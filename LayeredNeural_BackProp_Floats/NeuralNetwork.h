@@ -21,8 +21,8 @@ public:
 	std::vector<double> frontprop(std::vector<double> input);
 
 	//Genetic stuff
-	NeuralNetwork getRandomlyMutated(double range) const;
-	NeuralNetwork getRandomlyHybridized(const NeuralNetwork& n) const;
+	NeuralNetwork mutate(double range) const;
+	NeuralNetwork hybridize(const NeuralNetwork& n) const;
 
 	//Backprop stuff
 	std::vector<double> backprop(std::vector<double> testdata, std::vector<double> correct);

@@ -23,24 +23,26 @@ std::vector<double> NeuralNetwork::frontprop(std::vector<double> input){
 
 
 
-NeuralNetwork NeuralNetwork::getRandomlyMutated(double range) const{ //range is used for SA
-	range * rand11();
+NeuralNetwork NeuralNetwork::mutate(double range) const{ //range is used for SA
+	NeuralNetwork thistmp(*this);
+
+	//for each layer
+	for (size_t i = 0; i < depth(); i++)
+		thistmp.nlayers[i] = nlayers[i].mutate(range); //mutate
+
+	return thistmp;
 }
-NeuralNetwork NeuralNetwork::getRandomlyHybridized(const NeuralNetwork& other) const{
-	//uses random proportions of each.
-	//assert(they're the same sizes)
+NeuralNetwork NeuralNetwork::hybridize(const NeuralNetwork& other) const{
+	//uses random proportions of each to hybridize. Promotes genetic diversity I suppose.
 
 	NeuralNetwork thistmp(*this);
 	
-	//for each weight:
+	//for each layer
 	assert(depth() == other.depth());
-	for (size_t i = 0; i < depth(); i++){
-		thistmp.nlayers[i].callback([&other](size_t x, size_t y, double val){
-			double prop = (rand11() + 1) / 2;
-			
-		});
-	}
-	//(prop * weight + (1-prop)*other.weight)
+	for (size_t i = 0; i < depth(); i++)
+		thistmp.nlayers[i] = nlayers[i].hybridize(other.nlayers[i]); //hybridize
+
+	return thistmp;
 }
 
 

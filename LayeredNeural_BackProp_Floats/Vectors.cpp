@@ -21,6 +21,16 @@ std::vector<double> operator-(const std::vector<double>& a, const std::vector<do
 	for (size_t i = 0; i < a.size(); i++)c.push_back(a[i] - b[i]);
 	return c;
 }
+std::vector<double> operator-(double d, const std::vector<double>& a){
+	std::vector<double>c;
+	for (size_t i = 0; i < a.size(); i++)c.push_back(d - a[i]);
+	return c;
+}
+std::vector<double> operator-(const std::vector<double>& a, double d){
+	std::vector<double>c;
+	for (size_t i = 0; i < a.size(); i++)c.push_back(a[i] - d);
+	return c;
+}
 std::vector<double> operator-(const std::vector<double>& a){
 	std::vector<double>c;
 	for (size_t i = 0; i < a.size(); i++)c.push_back(-a[i]);
