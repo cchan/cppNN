@@ -4,7 +4,8 @@
 #include <ostream>
 #include <cassert>
 
-std::ostream& operator<< (std::ostream& os, const std::vector<double>& v);
+template<typename T> std::ostream& operator<<(std::ostream& os, const std::vector<T>& v);
+std::ostream& operator<<(std::ostream& os, const std::vector<double>& v);
 std::vector<double> operator+(const std::vector<double>& a, const std::vector<double>& b);
 std::vector<double> operator-(const std::vector<double>& a, const std::vector<double>& b);
 std::vector<double> operator-(const std::vector<double>& a);

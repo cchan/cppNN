@@ -4,19 +4,57 @@
 #include "Vectors.h"
 #include "NeuralNetwork.h"
 
-//Horrible-syntax convenience functions.
-#define fori(x) for (size_t i = 0, fori_size = (x); i < fori_size; i++)
-#define forj(x) for (size_t j = 0, forj_size = (x); j < forj_size; j++)
-
 using namespace std;
 
 vector<double> correctFunction(vector<double> b, size_t outputSize);
 vector<double> getTestdata(size_t inputSize);
 
 int main(){
-	const vector<size_t>sizes = { 5, 5 }; //Sizes of layers in the network.
+	const vector<size_t> sizes = { 5, 5 }; //Sizes of layers in the network.
 	const size_t inputSize = 5;//How many doubles in the input vector. Slightly proportional to overall time.
 	const size_t outputSize = sizes[sizes.size() - 1];
+
+	const size_t generations = 500;
+	const size_t netsPerGeneration = 8;
+	const size_t testsPerGeneration = 1000;
+
+	vector<NeuralNetwork> NNs(netsPerGeneration), newNNs(netsPerGeneration);
+	vector<double> scores(netsPerGeneration,0), testdata, diff;
+
+	for (size_t gen = 0; gen < generations; gen++){
+		for (size_t i = 0; i < netsPerGeneration; i++){
+			NNs[i] = NeuralNetwork(inputSize, sizes, 1);
+			NNs[i].randInit();
+		}
+
+		for (size_t test = 0; test < testsPerGeneration; test++){
+			testdata = getTestdata(inputSize);
+			for (size_t i = 0; i < NNs.size(); i++){
+				diff = correctFunction(testdata, outputSize) - NNs[i].frontprop(testdata);
+				scores[i] += dotProduct(diff, diff);
+			}
+		}
+
+		//Sort it by score from best to worst scores.
+		vector<size_t> ranking(netsPerGeneration);
+		for (size_t i = 0; i < netsPerGeneration; i++)ranking[i] = i;
+		std::sort(ranking.begin(), ranking.end(), [scores](size_t a, size_t b){return scores[a] < scores[b]; });
+		//cout << scores << ranking << endl;
+		cout << "\nPrimary:" << NNs[ranking[0]][0] <<endl;
+
+		for (size_t i = 0; i < netsPerGeneration; i++){ //Probabilistically
+			//SHOULD DO IT BASED ON SCORE - pick two or three, and let the best of those mutate, then repeat
+			//(isn't this a binomial distribution or something? oh it's poisson - it's tanks all over again! Max/min.)
+			newNNs[i] = NNs[ranking[0]];// .mutate(0.00000001); //SA
+			cout << newNNs[i][0] <<endl;
+			scores[i] = 0;
+		}
+
+		NNs = newNNs;
+	}
+
+	/*
+	//Backprop.
 
 	const size_t backprops = 100000;//Number of backpropagations. Proportional to overall time. (REMEMBER TO SWITCH TO RELEASE CONFIG FOR ~20x SPEED!)
 	const double annealingRate = 1.00001;//Different for different applications.
@@ -38,6 +76,7 @@ int main(){
 	for (size_t i = 0; i < sizes.size(); i++)
 		cout << nn[i] << endl;
 	cin.get();
+	*/
 }
 
 
@@ -49,7 +88,6 @@ vector<double> correctFunction(vector<double> b, size_t outputSize){
 vector<double> getTestdata(size_t inputSize){
 	vector<double> b;
 	b.reserve(inputSize);
-	fori(inputSize) b.push_back(rand11());
+	for (size_t i = 0; i < inputSize; i++) b.push_back(rand11());
 	return b;
 }
-

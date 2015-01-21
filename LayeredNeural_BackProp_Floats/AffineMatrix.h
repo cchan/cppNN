@@ -25,8 +25,8 @@ public:
 	std::vector<T> b() const{ return biases; }
 	void b(std::vector<T> newbiases);
 
-	std::vector<T> operator*(std::vector<T> v) const;
-	std::vector<T> transposeMultiply(std::vector<T> v) const;
+	std::vector<T> operator*(const std::vector<T>& v) const;
+	std::vector<T> transposeMultiply(const std::vector<T>& v) const;
 	std::vector<T> operator[](size_t i) const;
 	AffineMatrix<T> operator+(const AffineMatrix<T>& other) const;
 	AffineMatrix<T> operator+=(const AffineMatrix<T>& other);

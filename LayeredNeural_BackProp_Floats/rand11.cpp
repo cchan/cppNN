@@ -6,3 +6,6 @@ double rand11(){
 	static std::uniform_real_distribution<double> d(-1.0, 1.0);
 	return d(gen);
 }
+double rand01(){
+	return (rand11() + 1) / 2;
+}

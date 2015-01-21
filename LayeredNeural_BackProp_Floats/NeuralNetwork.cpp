@@ -1,7 +1,7 @@
 #include "NeuralNetwork.h"
 
 NeuralNetwork::NeuralNetwork(const size_t is, const std::vector<size_t>& s, double ar){
-	learningRate = 0.5; //Default; will be annealed.
+	learningRate = 0.1; //Default; will be annealed.
 	annealingRate = ar;
 	inputSize = is;
 	sizes = s;
@@ -9,7 +9,6 @@ NeuralNetwork::NeuralNetwork(const size_t is, const std::vector<size_t>& s, doub
 	for (size_t i = 0; i < sizes.size(); i++)
 		nlayers.push_back(AffineMatrix<double>(size_t(sizes[i]), i == 0 ? inputSize : sizes[i - 1]));
 }
-#include <iostream>
 void NeuralNetwork::randInit(){
 	for (AffineMatrix<double>& nl : nlayers)
 		nl.callback([](size_t i, size_t j, double& c){c = rand11(); });
@@ -72,11 +71,11 @@ std::vector<double> NeuralNetwork::backprop(std::vector<double> testdata, std::v
 	//std::cout << "correct: " << correct << "\nold: " << activations[activations.size() - 1] << "\nnew: " << frontprop(testdata) << "\n\n";
 	return activations[activations.size() - 1];
 }
-std::vector<double> NeuralNetwork::thresholding(std::vector<double> v){
+std::vector<double> NeuralNetwork::thresholding(std::vector<double> v) const{
 	std::for_each(v.begin(), v.end(), [](double& d){d = tanh(d); });
 	return v;
 }
-std::vector<double> NeuralNetwork::thresholding_prime(std::vector<double> v){
+std::vector<double> NeuralNetwork::thresholding_prime(std::vector<double> v) const{
 	std::for_each(v.begin(), v.end(), [](double& d){d = 1 - tanh(d) * tanh(d); });
 	return v;
 }

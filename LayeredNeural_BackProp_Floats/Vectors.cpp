@@ -1,11 +1,36 @@
 #include "Vectors.h"
 
-std::ostream& operator<< (std::ostream& os, const std::vector<double>& v){
-	if (v.size() == 0)os << "{}";
-	os << '{' << v[0];
-	for (size_t i = 1; i < v.size(); i++)
-		os << ',' << v[i];
-	os << '}';
+template<typename T> std::ostream& operator<<(std::ostream& os, const std::vector<T>& v){
+	if (v.size() == 0)
+		os << "{}";
+	else{
+		os << '{' << v[0];
+		for (size_t i = 1; i < v.size(); i++)
+			os << ',' << v[i];
+		os << '}';
+	}
+	return os;
+}
+std::ostream& operator<<(std::ostream& os, const std::vector<double>& v){
+	if (v.size() == 0)
+		os << "{}";
+	else{
+		os << '{' << v[0];
+		for (size_t i = 1; i < v.size(); i++)
+			os << ',' << v[i];
+		os << '}';
+	}
+	return os;
+}
+std::ostream& operator<<(std::ostream& os, const std::vector<unsigned int>& v){
+	if (v.size() == 0)
+		os << "{}";
+	else{
+		os << '{' << v[0];
+		for (size_t i = 1; i < v.size(); i++)
+			os << ',' << v[i];
+		os << '}';
+	}
 	return os;
 }
 

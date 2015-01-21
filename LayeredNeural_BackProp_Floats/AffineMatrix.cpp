@@ -56,7 +56,7 @@ template<typename T> void AffineMatrix<T>::setsize(size_t h, size_t w){
 	biases.reserve(height);
 }
 
-template<typename T> std::vector<T> AffineMatrix<T>::operator*(std::vector<T> v) const{
+template<typename T> std::vector<T> AffineMatrix<T>::operator*(const std::vector<T>& v) const{
 	assert(v.size() == width);
 	assert(biases.size() == height);
 	std::vector<T> a(height, 0);
@@ -67,7 +67,7 @@ template<typename T> std::vector<T> AffineMatrix<T>::operator*(std::vector<T> v)
 	}
 	return a;
 }
-template<typename T> std::vector<T> AffineMatrix<T>::transposeMultiply(std::vector<T> v) const{
+template<typename T> std::vector<T> AffineMatrix<T>::transposeMultiply(const std::vector<T>& v) const{
 	//Ignores biases.
 	assert(v.size() == height);
 	std::vector<T> a(width, 0);
@@ -118,13 +118,13 @@ template<typename T> AffineMatrix<T> AffineMatrix<T>::hybridize(AffineMatrix<T> 
 
 	std::vector<T> newmatrix = matrix;
 	for (int i = 0; i < newmatrix.size(); i++){
-		double prop = (rand11() + 1) / 2;
+		double prop = rand01();
 		newmatrix[i] = prop * newmatrix[i] + (1 - prop)*other.matrix[i];
 	}
 
 	std::vector<T> newbiases = biases;
 	for (int i = 0; i < newbiases.size(); i++){
-		double prop = (rand11() + 1) / 2;
+		double prop = rand01();
 		newbiases[i] = prop * newbiases[i] + (1 - prop)*other.biases[i];
 	}
 
