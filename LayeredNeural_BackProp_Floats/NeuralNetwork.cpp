@@ -13,7 +13,7 @@ void NeuralNetwork::randInit(){
 	for (AffineMatrix<double>& nl : nlayers)
 		nl.callback([](size_t i, size_t j, double& c){c = rand11(); });
 }
-std::vector<double> NeuralNetwork::frontprop(std::vector<double> input){
+std::vector<double> NeuralNetwork::frontprop(std::vector<double> input) const{
 	input = nlayers[0] * input; //Skip first thresholding
 	for (size_t i = 1; i < nlayers.size(); i++)
 		input = (nlayers[i] * thresholding(input)); //Skip last thresholding
@@ -63,7 +63,7 @@ std::vector<double> NeuralNetwork::backprop(std::vector<double> testdata, std::v
 
 	delta = thresholding(activations[activations.size() - 1]) - correct; //This last activation is only used for the delta.
 
-	for (int i = nlayers.size() - 1; i >= 0; i--){
+	for (size_t i = nlayers.size() - 1; i < nlayers.size(); i--){//unsigned ints ftw!
 		matrixdelta = affineOuterProduct(delta, activations[i]);
 		delta = hadamardProduct(nlayers[i].transposeMultiply(delta), thresholding_prime(activations[i]));
 		nlayers[i] -= learningRate * matrixdelta;
@@ -78,5 +78,11 @@ std::vector<double> NeuralNetwork::thresholding(std::vector<double> v) const{
 std::vector<double> NeuralNetwork::thresholding_prime(std::vector<double> v) const{
 	std::for_each(v.begin(), v.end(), [](double& d){d = 1 - tanh(d) * tanh(d); });
 	return v;
+}
+
+std::ostream& operator<< (std::ostream& os, const NeuralNetwork& nn){
+	for (size_t i = 0; i < nn.depth(); i++)
+		os << "Layer " << i << ":" << std::endl << nn[i] << std::endl;
+	return os;
 }
 

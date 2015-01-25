@@ -1,16 +1,5 @@
 #include "AffineMatrix.h"
 
-std::ostream& operator<< (std::ostream& os, const AffineMatrix<double>& a){
-	for (size_t i = 0; i < a.h(); i++)
-		os << a[i] << std::endl;
-	os << "BIAS: " << a.b();
-	return os;
-}
-
-AffineMatrix<double> affineOuterProduct(std::vector<double> a, std::vector<double> b){
-	return AffineMatrix<double>(a.size(), b.size(), [a, b](size_t i, size_t j){return a[i] * b[j]; }, [a, b](size_t i){return a[i]; });
-}
-
 template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w){
 	setsize(h, w);
 	matrix.resize(height*width);
@@ -117,13 +106,13 @@ template<typename T> AffineMatrix<T> AffineMatrix<T>::hybridize(AffineMatrix<T> 
 	assert(size_equals(other));
 
 	std::vector<T> newmatrix = matrix;
-	for (int i = 0; i < newmatrix.size(); i++){
+	for (size_t i = 0; i < newmatrix.size(); i++){
 		double prop = rand01();
 		newmatrix[i] = prop * newmatrix[i] + (1 - prop)*other.matrix[i];
 	}
 
 	std::vector<T> newbiases = biases;
-	for (int i = 0; i < newbiases.size(); i++){
+	for (size_t i = 0; i < newbiases.size(); i++){
 		double prop = rand01();
 		newbiases[i] = prop * newbiases[i] + (1 - prop)*other.biases[i];
 	}
@@ -136,6 +125,20 @@ template<typename T> void AffineMatrix<T>::callback(std::function<void(const siz
 		for (size_t j = 0; j < width; j++)
 			c(i, j, matrix[i*width + j]);
 }
+
+
+
+std::ostream& operator<< (std::ostream& os, const AffineMatrix<double>& a){
+	for (size_t i = 0; i < a.h(); i++)
+		os << a[i] << std::endl;
+	os << "BIAS: " << a.b();
+	return os;
+}
+
+AffineMatrix<double> affineOuterProduct(std::vector<double> a, std::vector<double> b){
+	return AffineMatrix<double>(a.size(), b.size(), [a, b](size_t i, size_t j){return a[i] * b[j]; }, [a, b](size_t i){return a[i]; });
+}
+
 
 
 template class AffineMatrix<double>;

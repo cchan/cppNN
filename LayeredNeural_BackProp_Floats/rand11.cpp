@@ -9,3 +9,7 @@ double rand11(){
 double rand01(){
 	return (rand11() + 1) / 2;
 }
+int randInt(int a, int b){
+	return floor(a + (b - a + 1) * rand01());
+}
+
