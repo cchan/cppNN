@@ -1,23 +1,23 @@
 #include "AffineMatrix.h"
 
 template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w){
-	setsize(h, w);
+	reserve_size(h, w);
 	matrix.resize(height*width);
 	biases.resize(height);
 }
-template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w, T(*fill_callback)()){
-	setsize(h, w);
-	for (size_t i = 0; i < height * width; i++)matrix.push_back(fill_callback());
-	for (size_t i = 0; i < height; i++)biases.push_back(fill_callback());
+template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w, T(*_fill_callback)()){
+	reserve_size(h, w);
+	for (size_t i = 0; i < height * width; i++)matrix.push_back(_fill_callback());
+	for (size_t i = 0; i < height; i++)biases.push_back(_fill_callback());
 }
-template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w, std::function<T(const size_t, const size_t)> fill_callback, std::function<T(const size_t)> bias_callback){
-	setsize(h, w);
-	for (size_t i = 0; i < height * width; i++)matrix.push_back(fill_callback(i / width, i%width));
-	for (size_t i = 0; i < height; i++)biases.push_back(bias_callback(i));
+template<typename T> AffineMatrix<T>::AffineMatrix(size_t h, size_t w, std::function<T(const size_t, const size_t)> _fill_callback, std::function<T(const size_t)> _bias_callback){
+	reserve_size(h, w);
+	for (size_t i = 0; i < height * width; i++)matrix.push_back(_fill_callback(i / width, i%width));
+	for (size_t i = 0; i < height; i++)biases.push_back(_bias_callback(i));
 }
 
 template<typename T> AffineMatrix<T>::AffineMatrix(std::vector<T> mdata, std::vector<T> bdata){
-	setsize(bdata.size(), mdata.size() / bdata.size());
+	reserve_size(bdata.size(), mdata.size() / bdata.size());
 
 	assert(mdata.size() == width*height);
 	assert(bdata.size() == height);
@@ -25,7 +25,7 @@ template<typename T> AffineMatrix<T>::AffineMatrix(std::vector<T> mdata, std::ve
 	biases = bdata;
 }
 template<typename T> AffineMatrix<T>::AffineMatrix(std::vector<std::vector<T> > mdata, std::vector<T> bdata){
-	setsize(mdata.size(), mdata[0].size());
+	reserve_size(mdata.size(), mdata[0].size());
 
 	for (std::vector<T> v : mdata){
 		assert(v.size() == width);
@@ -37,7 +37,7 @@ template<typename T> AffineMatrix<T>::AffineMatrix(std::vector<std::vector<T> > 
 	biases = bdata;
 }
 
-template<typename T> void AffineMatrix<T>::setsize(size_t h, size_t w){
+template<typename T> void AffineMatrix<T>::reserve_size(size_t h, size_t w){
 	assert(matrix.size() == 0 && biases.size() == 0);
 	height = h;
 	width = w;
@@ -120,12 +120,14 @@ template<typename T> AffineMatrix<T> AffineMatrix<T>::hybridize(AffineMatrix<T> 
 	return AffineMatrix<T>(newmatrix, newbiases);
 }
 
-template<typename T> void AffineMatrix<T>::callback(std::function<void(const size_t, const size_t, T&)> c){ //row, col, val
-	for (size_t i = 0; i < height; i++)
-		for (size_t j = 0; j < width; j++)
-			c(i, j, matrix[i*width + j]);
+template<typename T> void AffineMatrix<T>::callback(T(*_fill_callback)()){
+	for (size_t i = 0; i < height * width; i++)matrix[i] = _fill_callback();
+	for (size_t i = 0; i < height; i++)biases[i] = _fill_callback();
 }
-
+template<typename T> void AffineMatrix<T>::callback(std::function<T(const size_t, const size_t, const double)> _fill_callback, std::function<T(const size_t, const double)> _bias_callback){
+	for (size_t i = 0; i < height * width; i++)matrix[i] = _fill_callback(i / width, i%width, matrix[i]);
+	for (size_t i = 0; i < height; i++)biases[i] = _bias_callback(i, biases[i]);
+}
 
 
 std::ostream& operator<< (std::ostream& os, const AffineMatrix<double>& a){

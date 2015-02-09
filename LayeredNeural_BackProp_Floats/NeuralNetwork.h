@@ -1,20 +1,24 @@
 #pragma once
 #include <functional>
 #include <algorithm>
+#include <cassert>
 #include "Vectors.h"
 #include "AffineMatrix.h"
-#include "rand11.h"
+#include "../common.h"
+
 
 class NeuralNetwork{
 private:
 	size_t inputSize;
 	std::vector<size_t> sizes;
-	double learningRate, annealingRate, weightmax;
+	double learningRate, annealingRate;
+	const double initialLearningRate = 0.1;
 	std::vector<AffineMatrix<double> > nlayers;
 public:
 	NeuralNetwork(){};
-	NeuralNetwork(const size_t is, const std::vector<size_t>& s, double ar);
-	NeuralNetwork(const NeuralNetwork& nn){ inputSize = nn.inputSize; sizes = nn.sizes; learningRate = nn.learningRate; annealingRate = nn.annealingRate; weightmax = nn.weightmax; nlayers = nn.nlayers; }
+	NeuralNetwork(const size_t is, const std::vector<size_t>& s, double ar = 1.0);
+	NeuralNetwork(const NeuralNetwork& nn){ inputSize = nn.inputSize; sizes = nn.sizes; learningRate = nn.learningRate; annealingRate = nn.annealingRate; nlayers = nn.nlayers; }
+	NeuralNetwork& operator=(const NeuralNetwork& nn){ inputSize = nn.inputSize; sizes = nn.sizes; learningRate = nn.learningRate; annealingRate = nn.annealingRate; nlayers = nn.nlayers; return *this; }
 	size_t depth() const{ return nlayers.size(); };
 	size_t getInputSize() const{ return inputSize; };
 	size_t getOutputSize() const{ return sizes[sizes.size() - 1]; };
@@ -34,3 +38,4 @@ public:
 };
 
 std::ostream& operator<< (std::ostream& os, const NeuralNetwork& a);
+

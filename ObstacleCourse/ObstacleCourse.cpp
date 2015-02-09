@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cmath>
-#include "../common/rand11.h"
+#include <vector>
+#include "../common.h"
+#include "time.h"
 
 using namespace std;
 
@@ -11,46 +13,75 @@ public:
 	double x, y;
 	Point(){}
 	Point(double newx, double newy){ x = newx; y = newy; }
-	Point operator+(Point p){ return Point(x + p.x, y + p.y); }
-	Point operator-(Point p){ return Point(x - p.x, y - p.y); }
-	Point rotate(double radians){
+	Point operator+(const Point& p) const{ return Point(x + p.x, y + p.y); }
+	Point operator-(const Point& p) const{ return Point(x - p.x, y - p.y); }
+	Point rotate(double radians) const{
 		return Point(x * cos(radians) - y * sin(radians), y * cos(radians) + x * sin(radians));
 	}
-	double magn(){ return sqrt(x*x + y*y); }
-	double dist(Point p){ return (*this - p).magn(); }
+	double magn() const{ return sqrt(x*x + y*y); }
+	double dist(const Point& p) const{ return (*this - p).magn(); }
+	double theta() const{ return atan2(y, x); }
 };
+
 class Ray{
-public:
 	Point a, b; //Ray with tail at a, passing thru b.
+public:
+	Ray(){}
 	Ray(Point newa, Point newb){
 		a = newa; b = newb;
 	}
-	Ray rotate(double radians){ //Counterclockwise, as usual.
+	Ray(Point origin, double th){
+		a = origin;
+		b = origin + Point(1, 0).rotate(th);
+	}
+	double theta() const{
+		return (b - a).theta();
+	}
+	Point origin() const{ return a; }
+	double x() const{ return a.x; }
+	double y() const{ return a.y; }
+	/*Ray translateXYT(double x, double y, double t){
+		
+	}*/
+	Ray rotate(double radians) const{ //Counterclockwise, as usual.
 		return Ray(a, a + (b - a).rotate(radians));
 	}
-	double checkSide(Point p){
+	double checkSide(Point p) const{
 		//Finds the sign of the point relative to this line (as in, finds what side of the line it's on) - dotproduct with a perpendicular
 		//The left side is negative, and the right side is positive, and on it is zero.
 		//https://stackoverflow.com/questions/10906381/how-to-find-out-if-a-ray-intersects-a-rectangle
 		return (p.x - a.x)*(b.y - a.y) + (p.y - a.y)*(a.x - b.x);
 	}
 };
+
 class SonarServo{//Trying to behave as closely as possible to a Lego Sonar Sensor, so this can be applied to FTC possibly.
 private:
-	Ray baseHeading;
-	double servoAngle = 0;
 	const double spread = PI / 8;//45 degrees total spread
-	Ray getRotatedDir(){
-		return baseHeading.rotate(servoAngle);
+	const double minServoAngle = 0;
+	const double maxServoAngle = PI;
+	const int minServoValue = 0;
+	const int maxServoValue = 255;
+
+	Ray posdir;
+	double currentServoAngle;
+	Ray getRotatedDir() const{
+		return posdir.rotate(currentServoAngle);
 	}
-	bool pointInCone(Point p){
-		return baseHeading.rotate(servoAngle + spread).checkSide(p) > 0 //right side of CCW-rotated
-			&& baseHeading.rotate(servoAngle - spread).checkSide(p) < 0;//left side of CW-rotated
+	bool pointInCone(Point p) const{
+		return posdir.rotate(currentServoAngle + spread).checkSide(p) > 0 //right side of CCW-rotated
+			&& posdir.rotate(currentServoAngle - spread).checkSide(p) < 0;//left side of CW-rotated
 	}
 public:
+	SonarServo(Ray newBaseHeading){
+		currentServoAngle = 0;
+		posdir = newBaseHeading;
+	}
 	//moveServoToValue
-	unsigned char distanceReading(Point p){ //0 to 255
-		double dist = baseHeading.a.dist(p);
+	double actualDistanceReading(Point p) const{
+		return posdir.origin().dist(p);
+	}
+	double distanceReading(Point p) const{ //0 to 255
+		double dist = actualDistanceReading(p);
 
 		if (!pointInCone(p))return 255; //If it's out of cone, return error
 		if (dist > 100) return 255; //If it's out of range, return error.
@@ -58,35 +89,71 @@ public:
 		if (rand01() > 0.95) return 255; //and randomly have errors
 		if (dist > 80 && rand01() > 0.8) return 255; //plus have more errors at larger distances
 
-		if (dist < 25) dist = 25 + rand11() * 2; //If too close, don't return the right values.
+		if (dist < 25) dist = 23 + rand11() * 2; //If too close, level out at around 25
 
-		return round(dist + rand11()/2); //be reasonably accurate, but never exact
+		return round(dist + rand11() / 2); //be reasonably accurate, but never exact
 	}
-	void moveTo(Ray posAndRot){
-
+	void moveTo(Ray newposdir){
+		posdir = newposdir;
 	}
-	unsigned char servoRelativeHeading(){ //0 to 255
-
+	double servoRelativeEncoderHeading() const{ //0 to 255
+		return minServoValue + (maxServoValue - minServoValue) * (currentServoAngle - minServoAngle) / (maxServoAngle - minServoAngle);
 	}
 };
 
-
-class Block{
-	double centerX, centerY, theta, diameter;
-	double intersect(SonarServo ss){ //returns point of intersection between line and block nearest to ax, ay of line. returns std::nan (use std::isnan()) when doesn't hit.
-
-
-		//check if NaN is supported? because else returns 0
-	
-
+class FieldObject{
+protected:
+	Ray posdir; //x, y position, and angle
+	Ray velposdir; //x, y, theta components to velocity, per second.
+	double radius;
+public:
+	virtual void move(double delTime) = 0;
+	virtual void vel(const Ray& newvelposdir) = 0;
+	double SonarServoDistance(const SonarServo& ss) const{
+		//Nothing is a rectangle, just a point (well, a circle, since passing within *radius*1 + *radius*2 will be a collision
+		return ss.distanceReading(posdir.origin());
+	}
+	bool colliding(const FieldObject& other) const{
+		return (posdir.origin() - other.posdir.origin()).magn() < radius + other.radius;
+	}
 };
+
+class Robot : public FieldObject{
+private:
+	vector<SonarServo> sonars;
+public:
+	Robot(Ray newposdir, Ray newvelposdir){
+		for (int i = 0; i < 4; i++)//Four sonars with base headings orthogonal.
+			sonars.push_back(posdir.rotate(i * PI / 2.0));
+		posdir = newposdir;
+		velposdir = newvelposdir;
+	}
+	void move(double delTime){
+		
+	}
+	void vel(const Ray& newvelposdir){
+		velposdir = newvelposdir;
+	}
+};
+
+class Obstacle : public FieldObject{
+	Obstacle(){};
+	void move(double delTime){};
+	void vel(const Ray& newvelposdir){};
+};
+
 
 class Field{
+	Robot robot;
+	vector<Obstacle> obstacles;
+	Point startPoint;
+	Point targetPoint;
+
 
 };
 
 
 int main(){
-	
+	Robot r(Ray(Point(1, 1), PI / 4), Ray(Point(1,1),PI));
 }
 

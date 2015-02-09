@@ -15,5 +15,6 @@ std::vector<double> operator+=(std::vector<double>& a, const std::vector<double>
 std::vector<double> operator-=(std::vector<double>& a, const std::vector<double>& b);
 double dotProduct(const std::vector<double>& a, const std::vector<double>& b);
 std::vector<double> hadamardProduct(const std::vector<double>& a, const std::vector<double>& b);
+template<typename T> std::vector<T> extractIndices(std::vector<T> oldvec, std::vector<size_t> indices);
 
 

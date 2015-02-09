@@ -90,3 +90,11 @@ std::vector<double> hadamardProduct(const std::vector<double>& a, const std::vec
 		c.push_back(a[i] * b[i]);
 	return c;
 }
+
+template<typename T> std::vector<T> extractIndices(std::vector<T> oldvec, std::vector<size_t> indices){
+	vector<T> newvec();
+	newvec.reserve(indices.size());
+	for (size_t ind : indices)
+		newvec.push_back(oldvec[ind]);
+	return newvec;
+}

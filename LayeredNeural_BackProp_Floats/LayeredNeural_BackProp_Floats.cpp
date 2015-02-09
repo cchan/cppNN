@@ -3,7 +3,7 @@
 #include <string>
 #include <fstream>
 
-#include "rand11.h"
+#include "../common.h"
 #include "Vectors.h"
 #include "NeuralNetwork.h"
 
@@ -15,44 +15,21 @@ vector<double> getTestdata(size_t inputSize);
 NeuralNetwork evolve(ostream& out, const size_t inputSize, const vector<size_t> sizes);
 NeuralNetwork backprop(ostream& out, const size_t inputSize, const vector<size_t> sizes);
 
-//http://en.cppreference.com/w/cpp/chrono/c/strftime
-//https://stackoverflow.com/questions/14386923/localtime-vs-localtime-s-and-appropriate-input-arguments
-string startTimestamp(time_t &startTime){
-	string out = "";
-	startTime = std::time(NULL);
-	char timeFormatStr[100];
-	struct tm timeinfo;
-	localtime_s(&timeinfo, &startTime);
-	if (std::strftime(timeFormatStr, sizeof(timeFormatStr), "%b %d, %Y %H:%M:%S", &timeinfo))
-		out += "Started execution: " + (string)timeFormatStr + "\n\n";
-	return out;
-}
-string endTimestamp(time_t startTime){
-	string out = "";
-	time_t endTime = std::time(NULL);
-	char timeFormatStr[100];
-	struct tm timeinfo;
-	localtime_s(&timeinfo, &endTime);
-	if (std::strftime(timeFormatStr, sizeof(timeFormatStr), "%b %d, %Y %H:%M:%S", &timeinfo))
-		out += "\n\nCompleted execution: " + (string)timeFormatStr +"\n";
-	out += "Total execution time: " + to_string(endTime - startTime) + " seconds\n";
-	return out;
-}
-
 int main(){
-	ofstream fout("C:/Users/Clive/Desktop/ScifairLogs/genetic.txt");
+	ofstream fout("C:/Users/Clive/Desktop/ScifairLogs/genetic.txt"); //Append?
 	ofstream null;
 
 	const vector<size_t> sizes = { 5, 5 }; //Sizes of layers in the network.
 	const size_t inputSize = 5;//How many doubles in the input vector. Slightly proportional to overall time.
 	
-	std::time_t startTime;
-	fout << startTimestamp(startTime)
+	std::time_t startTime = 0;
+	NeuralNetwork bestNet;
+
+	cout << startTimestamp(startTime)
 		<< "NeuralNetwork inputSize: " << inputSize << endl
 		<< "NeuralNetwork layer sizes: " << sizes << endl << endl;
-	NeuralNetwork bestNet = evolve(fout, inputSize, sizes);
-	fout << endTimestamp(startTime);
-	fout << "\nFinal NN:\n" << bestNet;
+	bestNet = evolve(cout, inputSize, sizes);
+	cout << "\n\nFinal NN:\n" << bestNet << endl << endTimestamp(startTime);
 	cin.get();
 }
 
@@ -60,12 +37,40 @@ NeuralNetwork evolve(ostream& out, const size_t inputSize, const vector<size_t> 
 	const size_t outputSize = sizes[sizes.size() - 1];
 
 	//Genetic.
-	const size_t generations = 3000;
+	const size_t generations = 10000;
 	const size_t netsPerGeneration = 20;
 	const size_t testsPerGeneration = 500;
-	const double geneticAnnealingRate = 1.0001;//Tradeoff: the smaller, the more accurate (less likely local minimum). The larger, the faster it converges. Just like actual annealing.
-		//If it's too large, it starts giving the same NNs for each generation (the score variations between generations are because of testdata)
-	double mutationRange = 0.1;
+	const double annealingRateDecreaseRate = 1.003;
+	double geneticAnnealingRate = 1.02;//Tradeoff: the smaller, the more accurate (less likely local minimum). The larger, the faster it converges. Just like actual annealing.
+	double mutationRange = 0.2;
+		//If AR too large, it starts giving the same NNs for each generation (the score variations between generations are because of testdata)
+		//(could anneal the annealing rate too - the mutationrange consistently gets too small eventually)
+		//Optimally, equals the rate of decrease of the score itself.
+		//I think it has something to do with the lim n->inf rand(-1,1)^n average decrease rate (oh wait, isn't it like 1/2, since that's expected magnitude?)
+		//I think it's the integral of 1/x, so it's ln |x|.
+		//Note: best score and mutationRange should be approximately proportional throughout.
+	/*const int fac = 20;
+	for (int randiters = 0; randiters <= 20; randiters++){
+		double squareddeviations = 0;
+		vector<int> dist(2 * fac + 1);
+		for (int i = 0; i < 100000; i++){
+			double num = 1;
+			for (int j = 0; j < randiters; j++)num *= rand11();
+			dist[(int)round(num * fac) + fac]++;
+			squareddeviations += num * num;
+		}
+		double stddev = sqrt(squareddeviations / 10000);
+		double max = 0;
+		for (int x : dist)
+			if (x>max)max = x;
+		for (int i = 0; i < dist.size(); i++){
+			for (int j = 0; j < dist[i] * 79.0 / max; j++)
+				cout << '-';
+			cout << endl;
+		}
+		cout << randiters << ": " << stddev << endl;
+		cin.get();
+	}*/
 
 	out << "GENETIC" << endl
 		<< "Generations: " << generations << endl
@@ -95,11 +100,11 @@ NeuralNetwork evolve(ostream& out, const size_t inputSize, const vector<size_t> 
 		for (size_t i = 0; i < netsPerGeneration; i++)ranking[i] = i;
 		std::sort(ranking.begin(), ranking.end(), [scores](size_t a, size_t b){return scores[a] < scores[b]; });
 
-		if (gen % 10 == 0)out << gen << ": " << scores << endl;
+		if (gen % 10 == 0)out << "Generation " << gen << " best: " << scores[ranking[0]] << " dM: " << mutationRange << " SA: " << geneticAnnealingRate << endl;
 
-		if (gen == generations)return NNs[ranking[0]];
+		if (gen == generations)break;
 
-		for (size_t i = 0; i < netsPerGeneration; i++){ //Probabilistically
+		for (size_t netInGen = 0; netInGen < netsPerGeneration; netInGen++){ //Probabilistically
 			//PROBABILISTICALLY BASED ON SCORE - pick four rankings at random, pick the best two of those (the lowest two numbers) and hybridize-mutate those rankings.
 			const size_t pickHowMany = 6;
 			vector<int> randIndex(netsPerGeneration);
@@ -108,15 +113,20 @@ NeuralNetwork evolve(ostream& out, const size_t inputSize, const vector<size_t> 
 			for (size_t i = 0; i < pickHowMany; i++) iter_swap(randIndex.begin() + i, randIndex.begin() + randInt(i, netsPerGeneration - 1));
 			std::sort(randIndex.begin(), randIndex.begin() + pickHowMany); // + that many, because [first, last)
 
-			newNNs[i] = NNs[ranking[randIndex[0]]].hybridize(NNs[ranking[randIndex[1]]]).mutate(mutationRange /= geneticAnnealingRate); //SimulatedAnnealing
-			scores[i] = 0;
+			newNNs[netInGen] = NNs[ranking[randIndex[0]]].hybridize(NNs[ranking[randIndex[1]]]).mutate(mutationRange); //SimulatedAnnealing
+			scores[netInGen] = 0;
 		}
+
+		mutationRange /= geneticAnnealingRate;
+		geneticAnnealingRate = 1 + (geneticAnnealingRate - 1) / annealingRateDecreaseRate;
 
 		NNs = newNNs;
 
 		//out << "NN[0]:" << endl << NNs[0] << endl << "Frontprop result: \n" << NNs[0].frontprop({ 1, 1, 1, 1, 1 }) << endl << endl
 		//	<< "NN[1]:" << endl << NNs[1] << endl << "Frontprop result: \n" << NNs[1].frontprop({ 1, 1, 1, 1, 1 }) << endl << endl << endl << endl;
 	}
+
+	return NNs[ranking[0]];
 }
 
 NeuralNetwork backprop(ostream& out, const size_t inputSize, const vector<size_t> sizes){
@@ -142,7 +152,7 @@ NeuralNetwork backprop(ostream& out, const size_t inputSize, const vector<size_t
 		else
 			nn.backprop(testdata, correctFunction(testdata, outputSize));
 	}
-	out << "Done! Last delta was " << (correctFunction(testdata, outputSize) - nn.frontprop(testdata)) << ".\n\n\n";
+	out << "Done! Last delta was " << (correctFunction(testdata, outputSize) - nn.frontprop(testdata)) << ".\n\n";
 
 	return nn;
 }

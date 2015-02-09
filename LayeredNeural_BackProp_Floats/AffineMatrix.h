@@ -2,7 +2,7 @@
 #include <functional>
 #include <cassert>
 #include <ostream>
-#include "rand11.h"
+#include "../common.h"
 #include "Vectors.h"
 
 template<typename T> class AffineMatrix{
@@ -11,7 +11,7 @@ public:
 	size_t width;
 	std::vector<T> matrix;
 	std::vector<T> biases;
-	void setsize(size_t h, size_t w);
+	void reserve_size(size_t h, size_t w);
 public:
 	AffineMatrix(){}
 	AffineMatrix(size_t h, size_t w);
@@ -37,7 +37,8 @@ public:
 	AffineMatrix<T> mutate(double range) const;
 	AffineMatrix<T> hybridize(AffineMatrix<T> other) const;
 
-	void callback(std::function<void(const size_t, const size_t, T&)> c);
+	void callback(T(*_fill_callback)());
+	void callback(std::function<T(const size_t, const size_t, const double)> _fill_callback, std::function<T(const size_t, const double)> _bias_callback);
 };
 
 std::ostream& operator<< (std::ostream& os, const AffineMatrix<double>& a);
