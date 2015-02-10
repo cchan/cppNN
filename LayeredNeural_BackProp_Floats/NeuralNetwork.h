@@ -21,7 +21,7 @@ public:
 	NeuralNetwork& operator=(const NeuralNetwork& nn){ inputSize = nn.inputSize; sizes = nn.sizes; learningRate = nn.learningRate; annealingRate = nn.annealingRate; nlayers = nn.nlayers; return *this; }
 	size_t depth() const{ return nlayers.size(); };
 	size_t getInputSize() const{ return inputSize; };
-	size_t getOutputSize() const{ return sizes[sizes.size() - 1]; };
+	size_t getOutputSize() const{ assert(sizes.size() > 0);  return sizes[sizes.size() - 1]; };
 	AffineMatrix<double> operator[](size_t i) const{ return nlayers[i]; };
 	
 	void randInit();
