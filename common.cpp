@@ -10,10 +10,8 @@ double rand01(){
 	return (rand11() + 1) / 2;
 }
 int randInt(int a, int b){
-	return floor(a + (b - a + 1) * rand01());
+	return (int)floor(a + (b - a + 1) * rand01());
 }
-
-#include <iostream>
 
 //http://en.cppreference.com/w/cpp/chrono/c/strftime
 //https://stackoverflow.com/questions/14386923/localtime-vs-localtime-s-and-appropriate-input-arguments

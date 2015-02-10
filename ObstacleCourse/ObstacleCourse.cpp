@@ -104,11 +104,16 @@ public:
 class FieldObject{
 protected:
 	Ray posdir; //x, y position, and angle
-	Ray velposdir; //x, y, theta components to velocity, per second.
+	Ray veldir; //x, y, theta components to velocity, per second.
 	double radius;
 public:
-	virtual void move(double delTime) = 0;
-	virtual void vel(const Ray& newvelposdir) = 0;
+	virtual void step() = 0;
+	void pos(const Ray& newposdir){
+		posdir = newposdir;
+	}
+	void vel(const Ray& newveldir){
+		veldir = newveldir;
+	}
 	double SonarServoDistance(const SonarServo& ss) const{
 		//Nothing is a rectangle, just a point (well, a circle, since passing within *radius*1 + *radius*2 will be a collision
 		return ss.distanceReading(posdir.origin());
@@ -122,24 +127,21 @@ class Robot : public FieldObject{
 private:
 	vector<SonarServo> sonars;
 public:
-	Robot(Ray newposdir, Ray newvelposdir){
+	Robot(){}
+	Robot(Ray newposdir, Ray newveldir){
 		for (int i = 0; i < 4; i++)//Four sonars with base headings orthogonal.
 			sonars.push_back(posdir.rotate(i * PI / 2.0));
 		posdir = newposdir;
-		velposdir = newvelposdir;
+		veldir = newveldir;
 	}
-	void move(double delTime){
+	void step(){
 		
-	}
-	void vel(const Ray& newvelposdir){
-		velposdir = newvelposdir;
 	}
 };
 
 class Obstacle : public FieldObject{
 	Obstacle(){};
-	void move(double delTime){};
-	void vel(const Ray& newvelposdir){};
+	void step(){}
 };
 
 
@@ -148,12 +150,12 @@ class Field{
 	vector<Obstacle> obstacles;
 	Point startPoint;
 	Point targetPoint;
-
+	Field(){ Robot robot(Ray(Point(1, 1), PI / 4), Ray(Point(0, 0), 0)); }
 
 };
 
 
 int main(){
-	Robot r(Ray(Point(1, 1), PI / 4), Ray(Point(1,1),PI));
+	;
 }
 

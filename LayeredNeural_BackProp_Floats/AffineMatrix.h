@@ -46,3 +46,4 @@ AffineMatrix<double> affineOuterProduct(std::vector<double> a, std::vector<doubl
 template<typename T> AffineMatrix<T> operator*(T c, const AffineMatrix<T>& am){
 	return AffineMatrix<T>(c*am.matrix, c*am.biases);
 }
+

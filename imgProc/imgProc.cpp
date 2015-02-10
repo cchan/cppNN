@@ -120,7 +120,7 @@ ostream& operator<<(ostream& out, const Image& image){
 int main(){//Classifier, whether it's a '0' - is there a way it can generate hypotheses?
 	const int height = 3;
 	const int width = 3;
-	const int generations = 30000;
+	const int generations = 1000;
 
 	NeuralNetwork nn(height*width, { 1, 1 }, 1.0001);
 
