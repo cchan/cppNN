@@ -1,5 +1,7 @@
 #include "NeuralNetwork.h"
 
+//Guaranteed: no parallelization
+
 NeuralNetwork::NeuralNetwork(const size_t is, const std::vector<size_t>& s, double ar /* = 1.0*/){ //For some reason you can only define default val once, so it's defined in the *.h.
 	learningRate = initialLearningRate; //Default; will be annealed.
 	annealingRate = ar;
@@ -9,6 +11,64 @@ NeuralNetwork::NeuralNetwork(const size_t is, const std::vector<size_t>& s, doub
 	for (size_t i = 0; i < sizes.size(); i++)
 		nlayers.push_back(AffineMatrix<double>(size_t(sizes[i]), i == 0 ? inputSize : sizes[i - 1]));
 }
+/*
+EXPORT FORMAT
+[delim = " "]
+
+BEGIN_NN_EXPORT
+annealingRate
+inputSize
+numberOfLayers
+[sizes]
+[all nlayers, via callback]
+END_NN_EXPORT
+*/
+std::string NeuralNetwork::exportString(){
+	std::stringstream ss;
+	ss << "BEGIN_NN_EXPORT " << annealingRate << " " << inputSize << " " << sizes.size() << " ";
+	for (size_t size : sizes)ss << size << " ";
+
+	for (AffineMatrix<double>& nl : nlayers)
+		nl.callback([&ss](const size_t i, const size_t j, double& val){ ss << val << " "; }, [&ss](const size_t i, double& val){ ss << val << " "; });
+
+	ss << "END_NN_EXPORT";
+
+	return ss.str();
+}
+#include <iostream>
+NeuralNetwork::NeuralNetwork(std::string importString){
+	std::stringstream ss(importString);
+
+	std::string begin_token, end_token;
+
+	ss >> begin_token; //Indeed reads just one word at a time.
+	assert(begin_token == "BEGIN_NN_EXPORT");
+
+	learningRate = initialLearningRate;
+
+	size_t NumOfLayers;
+	assert(ss >> annealingRate >> inputSize >> NumOfLayers); // when ss has nothing left, it changes so that when cast to bool it becomes false - thus, detecting missings. - http://stackoverflow.com/a/12924210/1181387
+	for (size_t i = 0; i < NumOfLayers; i++){
+		int layerSize;
+		assert(ss >> layerSize);
+		sizes.push_back(layerSize);
+	}
+
+	//Init AffineMatrices
+	nlayers.reserve(sizes.size());
+	for (size_t i = 0; i < sizes.size(); i++)
+		nlayers.push_back(AffineMatrix<double>(size_t(sizes[i]), i == 0 ? inputSize : sizes[i - 1]));
+	//Input
+	for (AffineMatrix<double>& nl : nlayers)
+		nl.callback([&ss](const size_t i, const size_t j, double& val){ ss >> val; }, [&ss](const size_t i, double& val){ ss >> val; });
+	//No assert()s while importing matrix values, for speed
+
+	assert(ss >> end_token);
+	assert(end_token == "END_NN_EXPORT");
+}
+
+
+
 void NeuralNetwork::randInit(){
 	learningRate = initialLearningRate;
 	for (AffineMatrix<double>& nl : nlayers)

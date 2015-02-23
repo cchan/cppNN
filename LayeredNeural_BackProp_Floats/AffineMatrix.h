@@ -38,7 +38,7 @@ public:
 	AffineMatrix<T> hybridize(AffineMatrix<T> other) const;
 
 	void callback(T(*_fill_callback)());
-	void callback(std::function<T(const size_t, const size_t, const double)> _fill_callback, std::function<T(const size_t, const double)> _bias_callback);
+	void callback(std::function<void(const size_t, const size_t, double&)> _fill_callback, std::function<void(const size_t, double&)> _bias_callback);
 };
 
 std::ostream& operator<< (std::ostream& os, const AffineMatrix<double>& a);

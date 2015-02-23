@@ -5,9 +5,10 @@
 #include "Vectors.h"
 #include "AffineMatrix.h"
 #include "../common.h"
+#include <sstream>
 
 
-class NeuralNetwork{
+class NeuralNetwork{ // Guaranteed: no parallelization
 private:
 	size_t inputSize;
 	std::vector<size_t> sizes;
@@ -18,6 +19,8 @@ public:
 	NeuralNetwork(){};
 	NeuralNetwork(const size_t is, const std::vector<size_t>& s, double ar = 1.0);
 	NeuralNetwork(const NeuralNetwork& nn){ inputSize = nn.inputSize; sizes = nn.sizes; learningRate = nn.learningRate; annealingRate = nn.annealingRate; nlayers = nn.nlayers; }
+	std::string exportString();
+	NeuralNetwork(std::string importString);
 	NeuralNetwork& operator=(const NeuralNetwork& nn){ inputSize = nn.inputSize; sizes = nn.sizes; learningRate = nn.learningRate; annealingRate = nn.annealingRate; nlayers = nn.nlayers; return *this; }
 	size_t depth() const{ return nlayers.size(); };
 	size_t getInputSize() const{ return inputSize; };

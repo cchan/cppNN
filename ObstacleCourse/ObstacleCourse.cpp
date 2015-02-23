@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <vector>
 #include <cassert>
@@ -40,11 +41,34 @@ void gotoConsoleXY(int column, int line)
 
 class Robot{
 public:
-	NeuralNetwork brain;
+	NeuralNetwork& brain;
 	int x, y;
 	int FOVMax, FOVMin;
 
-	int step(vector<vector<int> > field, int stepnum){ //Field: +1 if X team, -1 if O team, 0 if nothing. Same width and height.
+	//double collabValue; //Outputs a value which is inputted into all other NNs of its type, so it can sort of "collaborate". Sequential vs. layered updating will be awkward.
+
+	Robot(NeuralNetwork& _brain, int _x, int _y, int _team, int _FOVMin, int _FOVMax) : brain(_brain){
+		x = _x;
+		y = _y;
+		FOVMin = _FOVMin;
+		FOVMax = _FOVMax;
+	}
+	Robot(const Robot& other) : brain(other.brain){
+		x = other.x;
+		y = other.y;
+		FOVMin = other.FOVMin;
+		FOVMax = other.FOVMax;
+	}
+	Robot operator=(const Robot& other){
+		brain = other.brain;
+		x = other.x;
+		y = other.y;
+		FOVMin = other.FOVMin;
+		FOVMax = other.FOVMax;
+		return other;
+	}
+
+	int step(const vector<vector<int> >& field, int stepnum){ //Field: +1 if X team, -1 if O team, 0 if nothing. Same width and height.
 		assert(brain.getOutputSize() == 2); //Because step() wouldn't work otherwise.
 		assert(brain.getInputSize() == (FOVMax - FOVMin + 1)*(FOVMax - FOVMin + 1) + 3); //Make sure it's the right inputsize too. 
 
@@ -67,7 +91,6 @@ public:
 		proximity.push_back(stepnum); //Basically, what time is it
 
 		vector<double> newpos = brain.thresholding(brain.frontprop(proximity));
-		//vector<double> newpos = { 1, 1 };
 
 		//Moves itself based on that brain's response.
 		// (1,1)  (1,0)  (1,-1)
@@ -78,33 +101,19 @@ public:
 		else if (newpos[0] < -0.3333333 && x > 0 && field[x - 1][y] == 0) { retval++; x--; }
 		if (newpos[1] > 0.3333333  && y < field.size() - 1 && field[x][y + 1] == 0) { retval++; y++; }
 		else if (newpos[1] < -0.3333333 && y > 0 && field[x][y - 1] == 0) { retval++; y--; }
-		return retval;
+		return retval; //Taxicab distance.
 	}
 };
 
 class XRobot : public Robot{
 public:
-	XRobot(){}
-	XRobot(NeuralNetwork _brain, int _x, int _y, int _team, int _FOVMin, int _FOVMax){
-		brain = _brain;
-		x = _x;
-		y = _y;
-		FOVMin = _FOVMin;
-		FOVMax = _FOVMax;
-	}
+	XRobot(NeuralNetwork& _brain, int _x, int _y, int _team, int _FOVMin, int _FOVMax) : Robot(_brain, _x, _y, _team, _FOVMin, _FOVMax){}
 };
 
 class ORobot : public Robot{
 public:
-	ORobot(){}
-	ORobot(NeuralNetwork _brain, int _x, int _y, int _team, int _FOVMin, int _FOVMax){
-		brain = _brain;
-		x = _x;
-		y = _y;
-		FOVMin = _FOVMin;
-		FOVMax = _FOVMax;
-	}
-	bool isEaten(vector<XRobot> XRobots) const{ //Within 1, in both X and Y coords.
+	ORobot(NeuralNetwork& _brain, int _x, int _y, int _team, int _FOVMin, int _FOVMax) : Robot(_brain, _x, _y, _team, _FOVMin, _FOVMax){}
+	bool isEaten(const vector<XRobot>& XRobots) const{ //Within 1, in both X and Y coords.
 		for (XRobot r : XRobots)
 			if (abs(x - r.x) <= 1 && abs(y - r.y) <= 1)
 				return true;
@@ -114,40 +123,25 @@ public:
 
 class Battle{
 public:
-	const int fieldsize = 20;
+	const static int fieldsize = 20;
 	const int startingX = 2, startingO = 4;
 	const int FOVMax = 4, FOVMin = -4;
 	int OScore = 0, OTraveledScore = 0, XTraveledScore = 0, stepnum = 0;
 	vector<int> OLifetimes;
+	vector<vector<int> > field;
 
 	vector<XRobot> XRobots;
 	vector<ORobot> ORobots;
 
-	Battle(NeuralNetwork nnX, NeuralNetwork nnO){
-		//vector<vector<bool> > placement(fieldsize);
-		//for (auto &v : placement)
-			//v = vector<bool>(fieldsize, false);
-
+	Battle(NeuralNetwork& nnX, NeuralNetwork& nnO){
 		int x, y;
 		for (int i = 0; i < startingX; i++){
-			//do{
-				//x = randInt(0, fieldsize - 1);
-				//y = randInt(0, fieldsize - 1);
-			//} while (placement[x][y]);
-			//placement[x][y] = true;
-
 			x = fieldsize / 4;
 			y = fieldsize / (startingX + 1) * (1 + i);
 
 			XRobots.push_back(XRobot(nnX, x, y, 1, FOVMin, FOVMax));
 		}
 		for (int i = 0; i < startingO; i++){
-			//do{
-				//x = randInt(0, fieldsize - 1);
-				//y = randInt(0, fieldsize - 1);
-			//} while (placement[x][y]);
-			//placement[x][y] = true;
-
 			x = 3 * fieldsize / 4;
 			y = fieldsize / (startingO + 1) * (1 + i);
 
@@ -155,13 +149,14 @@ public:
 		}
 
 		OLifetimes = vector<int>(ORobots.size(), 0);
+
+		field = getField();
 	}
 	vector<vector<int> > getField(){
 		vector<vector<int> > field(fieldsize);
-		for (auto &v : field)
-			v = vector<int>(fieldsize, 0);
-		for (Robot &r : XRobots)field[r.x][r.y] = 1;
-		for (Robot &r : ORobots)field[r.x][r.y] = -1;
+		for (auto &v : field)v = vector<int>(fieldsize);//Init to zero
+		for (const Robot &r : XRobots)field[r.x][r.y] = 1;//Add XRobots
+		for (const Robot &r : ORobots)field[r.x][r.y] = -1;//Add ORobots
 		return field;
 	}
 	int getCurrentOScore(){
@@ -176,22 +171,25 @@ public:
 	int getXTraveled(){
 		return XTraveledScore;
 	}
-	vector<vector<int> > step(){
-		vector<vector<int> > field = getField();
-
+	void step(){
+		//Eating
 		for (int i = ORobots.size() - 1; i >= 0; i--){//Backwards, so that the downshifting when deleted doesn't affect anything.
 			if (ORobots[i].isEaten(XRobots)){
+				field[ORobots[i].x][ORobots[i].y] = 0;
 				OScore += OLifetimes[i];
 				ORobots.erase(ORobots.begin() + i);
 				OLifetimes.erase(OLifetimes.begin() + i);
 			}
 		}
 
+		//Moving XRobots
 		for (XRobot &r : XRobots){
 			int oldx = r.x, oldy = r.y;
 			XTraveledScore += r.step(field, stepnum);
 			field[oldx][oldy] = 0; field[r.x][r.y] = 1;
 		}
+		
+		//Moving ORobots
 		for (int i = 0; i < ORobots.size(); i++){
 			int oldx = ORobots[i].x, oldy = ORobots[i].y;
 			OTraveledScore += ORobots[i].step(field, stepnum);
@@ -200,29 +198,25 @@ public:
 		}
 
 		stepnum++;
-
-		return field;
 	}
-	void output(vector<vector<int> > field){//Outputs the Xs, Os, and uses '.' for anything in the field of view.
-		gotoConsoleXY(0, 0);
-		for (int i = 0; i < fieldsize; i++){
-			for (int j = 0; j < fieldsize; j++){
-				if (field[i][j] == 0){
-					bool hasnear = false;
-					for (int dx = max(FOVMin + i, 0); dx <= min(FOVMax + i, fieldsize - 1) && !hasnear; dx++)
-						for (int dy = max(FOVMin + j, 0); dy <= min(FOVMax + j, fieldsize - 1) && !hasnear; dy++)
-							if (field[dx][dy] == 1){ field[i][j] = 2; hasnear = true; }
-				}
-			}
+	void output(){//Outputs the Xs, Os, and uses '.' for anything in the field of view.
+		gotoConsoleXY(0, 2);
+		for (const XRobot &r : XRobots){
+			for (int dx = max(FOVMin + r.x, 0); dx <= min(FOVMax + r.x, fieldsize - 1); dx++)
+				for (int dy = max(FOVMin + r.y, 0); dy <= min(FOVMax + r.y, fieldsize - 1); dy++)
+					if (field[dx][dy] == 0)
+						field[dx][dy] = 2;
 		}
 		for (int i = 0; i < fieldsize; i++){
+			cout << (char)0xb3;
 			for (int j = 0; j < fieldsize; j++){
-				if (field[i][j] == 1)cout << 'X';
+				if (field[i][j] == 0)cout << ' ';
+				else if (field[i][j] == 2){ cout << (char)0xfa; field[i][j] = 0; } //OEM extended ascii
 				else if (field[i][j] == -1)cout << 'O';
-				else if (field[i][j] == 2)cout << '.';
-				else cout << ' ';
+				else if (field[i][j] == 1)cout << 'X';
+				else { cout << "Invalid value: " << field[i][j]; assert(false); }
 			}
-			cout << endl;
+			cout << (char)0xb3 << endl;
 		}
 	}
 };
@@ -247,10 +241,11 @@ int main(){
 		Output: which of the 9 cells surrounding/under the robot it should move to.
 	*/
 
-	resizeWindow(800, 600);
 
+	//Config. TODO: make it more configurable.
+	resizeWindow(800, 500);
 	double mutationRange = 0.4;
-	double annealingRate = 1.005;
+	double annealingRate = 1.000;
 	const int steps_per_battle = 100;
 	
 	vector<pair<NeuralNetwork, pair<int, int> > > nnX(5), nnO(5);
@@ -265,22 +260,30 @@ int main(){
 		nn.first.randInit();
 	}
 
+	ofstream fout("C:/Users/Clive/Desktop/testNNExport.txt", fstream::out | fstream::app);
+	std::time_t startTime = 0;
+	fout << startTimestamp(startTime);
+
 	for (int generation = 0; generation < 100000; generation++){
+		gotoConsoleXY(0, 0);
 		cout << "Gen: " << generation << endl;
-		bool hasntshownyet = true;
-		parallel_for (size_t(0),nnX.size()*nnO.size(),[&](size_t iXO){
+		parallel_for (size_t(0),nnX.size()*nnO.size(),[&](size_t iXO){//the parallelized tasks should be smaller... parallel_for over the steps?
 			int iX = iXO % nnX.size();
 			int iO = iXO / nnX.size();
 			Battle b(nnX[iX].first, nnO[iO].first);
-			if (hasntshownyet){//Output the first match of every generation.
-				hasntshownyet = false;
-				for (int i = 0; i < steps_per_battle; i++)
-					b.output(b.step());
-				cout << "[done " << generation << "]" << endl;
+			if (iXO == 0){//Output the first match of every generation (nnO[0] vs nnX[0])
+				cout << (char)0xda; for (int i = 0; i < Battle::fieldsize; i++){ cout << (char)0xc4; } cout << (char)0xbf << endl;
+				for (int i = 0; i < steps_per_battle && b.ORobots.size() > 0; i++){ b.step(); if (i % 2 == 0){ b.output(); /*cout << b.getCurrentOScore(); cin.get();*/ } } b.output();
+				cout << (char)0xc0; for (int i = 0; i < Battle::fieldsize; i++){ cout << (char)0xc4; } cout << (char)0xd9 << endl;
+				cout << endl
+					<< "Done displaying " << generation << ":" << endl
+					<< "  Steps per battle: " << steps_per_battle << endl
+					<< "  OLifetimeSum: " << b.getCurrentOScore() << "    " << endl
+					<< "  XTraveled: " << b.getXTraveled() << "    " << endl
+					<< "  OTraveled: " << b.getOTraveled() << "    " << endl;
 			}
 			else{
-				for (int i = 0; i < steps_per_battle; i++)
-					b.step();
+				for (int i = 0; i < steps_per_battle && b.ORobots.size() > 0; i++)b.step();
 			}
 			nnX[iX].second.first += b.getCurrentOScore();
 			nnO[iO].second.first += b.getCurrentOScore();
@@ -288,7 +291,10 @@ int main(){
 			nnO[iO].second.second += b.getOTraveled();
 		});
 
-		cout << "Mutating " << generation << "..." << endl;
+		fout << generation << " X: " << nnX[0].first.exportString() << endl
+			<< generation << " O: " << nnO[0].first.exportString() << endl;
+
+		cout << "Scored all battles, gen " << generation << ".\nMutate " << mutationRange << endl << "[SA " << annealingRate << "]";
 
 		//For X, you're trying to minimize the O lifetime, or to tiebreak maximize the disttraveled.
 		sort(nnX.begin(), nnX.end(), [](pair<NeuralNetwork, pair<int, int>> n1, pair<NeuralNetwork, pair<int, int>> n2){if (n1.second.first == n2.second.first) return n1.second.second > n2.second.second; return n1.second.first < n2.second.first; });
@@ -317,6 +323,8 @@ int main(){
 		}
 	}
 
+	fout << endTimestamp(startTime);
 	cin.get();
+	return 0;
 }
 

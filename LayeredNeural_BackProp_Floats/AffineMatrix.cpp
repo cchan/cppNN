@@ -124,9 +124,9 @@ template<typename T> void AffineMatrix<T>::callback(T(*_fill_callback)()){
 	for (size_t i = 0; i < height * width; i++)matrix[i] = _fill_callback();
 	for (size_t i = 0; i < height; i++)biases[i] = _fill_callback();
 }
-template<typename T> void AffineMatrix<T>::callback(std::function<T(const size_t, const size_t, const double)> _fill_callback, std::function<T(const size_t, const double)> _bias_callback){
-	for (size_t i = 0; i < height * width; i++)matrix[i] = _fill_callback(i / width, i%width, matrix[i]);
-	for (size_t i = 0; i < height; i++)biases[i] = _bias_callback(i, biases[i]);
+template<typename T> void AffineMatrix<T>::callback(std::function<void(const size_t, const size_t, double&)> _fill_callback, std::function<void(const size_t, double&)> _bias_callback){
+	for (size_t i = 0; i < height * width; i++)_fill_callback(i / width, i%width, matrix[i]);
+	for (size_t i = 0; i < height; i++)_bias_callback(i, biases[i]);
 }
 
 
