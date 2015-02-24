@@ -27,7 +27,7 @@ void resizeWindow(int xpx, int ypx){
 }
 
 //http://stackoverflow.com/a/22685071/1181387
-void gotoConsoleXY(int column, int line)
+void setConsoleXY(int column, int line)
 {
 	COORD coord;
 	coord.X = column;
@@ -36,6 +36,21 @@ void gotoConsoleXY(int column, int line)
 		GetStdHandle(STD_OUTPUT_HANDLE),
 		coord
 		);
+}
+void setConsoleCoord(COORD coord)
+{
+	SetConsoleCursorPosition(
+		GetStdHandle(STD_OUTPUT_HANDLE),
+		coord
+		);
+}
+COORD getConsoleCoord(){
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	assert(GetConsoleScreenBufferInfo(
+		GetStdHandle(STD_OUTPUT_HANDLE),
+		&csbi
+		));
+	return csbi.dwCursorPosition;
 }
 
 
@@ -200,7 +215,6 @@ public:
 		stepnum++;
 	}
 	void output(){//Outputs the Xs, Os, and uses '.' for anything in the field of view.
-		gotoConsoleXY(0, 2);
 		for (const XRobot &r : XRobots){
 			for (int dx = max(FOVMin + r.x, 0); dx <= min(FOVMax + r.x, fieldsize - 1); dx++)
 				for (int dy = max(FOVMin + r.y, 0); dy <= min(FOVMax + r.y, fieldsize - 1); dy++)
@@ -222,6 +236,19 @@ public:
 };
 
 
+void replay(string nnXexport, string nnOexport, int steps_per_battle){
+	NeuralNetwork nnX(nnXexport), nnO(nnOexport);
+	Battle b(nnX, nnO);
+
+	cout << (char)0xda; for (int i = 0; i < Battle::fieldsize; i++){ cout << (char)0xc4; } cout << (char)0xbf << endl;
+	//for (int i = 0; i < Battle::fieldsize + 1; i++)cout << endl;
+	//cout << (char)0xc0; for (int i = 0; i < Battle::fieldsize; i++){ cout << (char)0xc4; } cout << (char)0xd9 << endl;
+
+	for (int i = 0; i < steps_per_battle && b.ORobots.size() > 0; i++){
+		b.step();
+		b.output();
+	}
+}
 
 int main(){
 	/*
@@ -244,6 +271,7 @@ int main(){
 
 	//Config. TODO: make it more configurable.
 	resizeWindow(800, 500);
+	system("color f0");
 	double mutationRange = 0.4;
 	double annealingRate = 1.000;
 	const int steps_per_battle = 100;
@@ -260,12 +288,14 @@ int main(){
 		nn.first.randInit();
 	}
 
-	ofstream fout("C:/Users/Clive/Desktop/testNNExport.txt", fstream::out | fstream::app);
-	std::time_t startTime = 0;
-	fout << startTimestamp(startTime);
+	ofstream NN_fout("C:/Users/Clive/Desktop/github/scifair/ObstacleCourse.NN.export.txt", fstream::out | fstream::app);
+	ofstream Scores_fout("C:/Users/Clive/Desktop/github/scifair/ObstacleCourse.Scores.export.txt", fstream::out | fstream::app);
+	std::time_t startTime_NN = 0, startTime_Scores = 0;
+	NN_fout << endl << endl << startTimestamp(startTime_NN);
+	Scores_fout << endl << endl << startTimestamp(startTime_Scores);
 
 	for (int generation = 0; generation < 100000; generation++){
-		gotoConsoleXY(0, 0);
+		setConsoleXY(0, 0);
 		cout << "Gen: " << generation << endl;
 		parallel_for (size_t(0),nnX.size()*nnO.size(),[&](size_t iXO){//the parallelized tasks should be smaller... parallel_for over the steps?
 			int iX = iXO % nnX.size();
@@ -273,7 +303,18 @@ int main(){
 			Battle b(nnX[iX].first, nnO[iO].first);
 			if (iXO == 0){//Output the first match of every generation (nnO[0] vs nnX[0])
 				cout << (char)0xda; for (int i = 0; i < Battle::fieldsize; i++){ cout << (char)0xc4; } cout << (char)0xbf << endl;
-				for (int i = 0; i < steps_per_battle && b.ORobots.size() > 0; i++){ b.step(); if (i % 2 == 0){ b.output(); /*cout << b.getCurrentOScore(); cin.get();*/ } } b.output();
+				COORD coord = getConsoleCoord();
+				for (int i = 0; i < steps_per_battle && b.ORobots.size() > 0; i++){
+					b.output(); cin.get();
+						setConsoleCoord(coord);
+					b.step();
+					if (i % 2 == 0){
+						b.output();
+						setConsoleCoord(coord);
+						/*cout << b.getCurrentOScore(); cin.get();*/
+					}
+				}
+				b.output();
 				cout << (char)0xc0; for (int i = 0; i < Battle::fieldsize; i++){ cout << (char)0xc4; } cout << (char)0xd9 << endl;
 				cout << endl
 					<< "Done displaying " << generation << ":" << endl
@@ -283,7 +324,8 @@ int main(){
 					<< "  OTraveled: " << b.getOTraveled() << "    " << endl;
 			}
 			else{
-				for (int i = 0; i < steps_per_battle && b.ORobots.size() > 0; i++)b.step();
+				for (int i = 0; i < steps_per_battle && b.ORobots.size() > 0; i++)
+					b.step();
 			}
 			nnX[iX].second.first += b.getCurrentOScore();
 			nnO[iO].second.first += b.getCurrentOScore();
@@ -291,7 +333,7 @@ int main(){
 			nnO[iO].second.second += b.getOTraveled();
 		});
 
-		fout << generation << " X: " << nnX[0].first.exportString() << endl
+		NN_fout << generation << " X: " << nnX[0].first.exportString() << endl
 			<< generation << " O: " << nnO[0].first.exportString() << endl;
 
 		cout << "Scored all battles, gen " << generation << ".\nMutate " << mutationRange << endl << "[SA " << annealingRate << "]";
@@ -312,6 +354,9 @@ int main(){
 
 		//For O, you're trying to maximize the O lifetime, or to tiebreak maximize the distTraveled
 		sort(nnO.begin(), nnO.end(), [](pair<NeuralNetwork, pair<int, int>> n1, pair<NeuralNetwork, pair<int, int>> n2){if (n1.second.first == n2.second.first) return n1.second.second > n2.second.second; return n1.second.first > n2.second.first; });
+		
+		Scores_fout << nnO[0].second.first << " " << flush;
+
 		NeuralNetwork tmpO = nnO[0].first, tmpO2 = nnO[1].first;
 		for (int i = 0; i < nnO.size() / 2; i++){
 			nnO[i].first = tmpO.mutate(mutationRange /= annealingRate);
@@ -323,7 +368,9 @@ int main(){
 		}
 	}
 
-	fout << endTimestamp(startTime);
+	NN_fout << endTimestamp(startTime_NN);
+	Scores_fout << endTimestamp(startTime_Scores);
+
 	cin.get();
 	return 0;
 }
