@@ -10,6 +10,7 @@ double rand01(){
 	return (rand11() + 1) / 2;
 }
 int randInt(int a, int b){ // Inclusive on both ends.
+	assert(b >= a);
 	return (int)floor(a + (b - a + 1) * rand01());
 }
 
@@ -37,3 +38,42 @@ std::string endTimestamp(time_t startTime){
 	return out;
 }
 
+
+
+
+
+
+void resizeWindow(size_t xpx, size_t ypx){
+	HWND console = GetConsoleWindow();
+	RECT r;
+	GetWindowRect(console, &r); //stores the console's current dimensions
+
+	MoveWindow(console, r.left, r.top, xpx, ypx, TRUE);
+}
+
+
+void setConsoleXY(size_t column, size_t line)
+{
+	COORD coord;
+	coord.X = column;
+	coord.Y = line;
+	assert(SetConsoleCursorPosition(
+		GetStdHandle(STD_OUTPUT_HANDLE),
+		coord
+		));
+}
+void setConsoleCoord(COORD coord)
+{
+	assert(SetConsoleCursorPosition(
+		GetStdHandle(STD_OUTPUT_HANDLE),
+		coord
+		));
+}
+COORD getConsoleCoord(){
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	assert(GetConsoleScreenBufferInfo(
+		GetStdHandle(STD_OUTPUT_HANDLE),
+		&csbi
+		));
+	return csbi.dwCursorPosition;
+}

@@ -35,7 +35,6 @@ std::string NeuralNetwork::exportString(){
 
 	return ss.str();
 }
-#include <iostream>
 NeuralNetwork::NeuralNetwork(std::string importString){
 	std::stringstream ss(importString);
 
@@ -63,7 +62,7 @@ NeuralNetwork::NeuralNetwork(std::string importString){
 		nl.callback([&ss](const size_t i, const size_t j, double& val){ ss >> val; }, [&ss](const size_t i, double& val){ ss >> val; });
 	//No assert()s while importing matrix values, for speed
 
-	assert(ss >> end_token);
+	ss >> end_token; //No assert, since it might just be the last token, and then it'll be false once it's read out.
 	assert(end_token == "END_NN_EXPORT");
 }
 

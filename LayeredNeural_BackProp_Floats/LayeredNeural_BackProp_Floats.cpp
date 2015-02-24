@@ -134,7 +134,7 @@ NeuralNetwork backprop(ostream& out, const size_t inputSize, const vector<size_t
 
 	//Backprop.
 	const size_t backprops = 100000;//Number of backpropagations. Proportional to overall time. (REMEMBER TO SWITCH TO RELEASE CONFIG FOR ~20x SPEED!)
-	const double backpropAnnealingRate = 1.00005;//Different for different applications.
+	const double backpropAnnealingRate = 1.00001;//Different for different applications.
 
 	out << "BACKPROP" << endl
 		<< "Number of backpropagations: " << backprops << endl
