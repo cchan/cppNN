@@ -2,6 +2,7 @@
 #include <ctime>
 #include <string>
 #include <fstream>
+#include <iomanip>
 
 #include "../common.h"
 #include "Vectors.h"
@@ -28,6 +29,7 @@ int main(){
 	cout << startTimestamp(startTime)
 		<< "NeuralNetwork inputSize: " << inputSize << endl
 		<< "NeuralNetwork layer sizes: " << sizes << endl << endl;
+	cout.precision(2);
 	bestNet = backprop(cout, inputSize, sizes);
 	cout << "\n\nFinal NN:\n" << bestNet << endl << endTimestamp(startTime);
 	cin.get();
@@ -133,13 +135,14 @@ NeuralNetwork backprop(ostream& out, const size_t inputSize, const vector<size_t
 	const size_t outputSize = sizes[sizes.size() - 1];
 
 	//Backprop.
-	const size_t backprops = 100000;//Number of backpropagations. Proportional to overall time. (REMEMBER TO SWITCH TO RELEASE CONFIG FOR ~20x SPEED!)
+	const size_t displayperiod = 1000;//How often to display the result of the backprop (every * backprops)
+	const size_t backprops = 10000;//Number of backpropagations. Proportional to overall time. (REMEMBER TO SWITCH TO RELEASE CONFIG FOR ~20x SPEED!)
 	const double backpropAnnealingRate = 1.00001;//Different for different applications.
 
 	out << "BACKPROP" << endl
 		<< "Number of backpropagations: " << backprops << endl
 		<< "Annealing Rate: " << backpropAnnealingRate << endl << endl
-		<< "Deltas: " << endl;
+		<< "Deltas (every " << displayperiod << " backprops): " << endl;
 
 	NeuralNetwork nn(inputSize, sizes, backpropAnnealingRate);
 	nn.randInit();
@@ -147,7 +150,7 @@ NeuralNetwork backprop(ostream& out, const size_t inputSize, const vector<size_t
 	vector<double> testdata;
 	for (size_t n = 0; n < backprops; n++){
 		testdata = getTestdata(inputSize);
-		if (n % 1000 == 0)
+		if (n % displayperiod == 0)
 			out << correctFunction(testdata, outputSize) - nn.backprop(testdata, correctFunction(testdata, outputSize)) << endl;
 		else
 			nn.backprop(testdata, correctFunction(testdata, outputSize));
