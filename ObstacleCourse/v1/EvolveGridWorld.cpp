@@ -47,9 +47,12 @@ int main(){
 	NN_fout << endl << endl << startTimestamp(startTime_NN);
 	Scores_fout << endl << endl << startTimestamp(startTime_Scores);
 
+	cout << "Ready to begin. Press enter to continue...";
+	cin.get();
+
 	for (int generation = 0; generation < 100000; generation++){
 		setConsoleXY(0, 0);
-		cout << "Gen: " << generation << endl;
+		cout << "Gen: " << generation << "                                                  " << endl;
 		concurrency::parallel_for(size_t(0), nnX.size()*nnO.size(), [&](size_t iXO){//the parallelized tasks should be smaller... parallel_for over the steps?
 			int iX = iXO % nnX.size();
 			int iO = iXO / nnX.size();

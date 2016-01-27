@@ -2,8 +2,8 @@
 #include <vector>
 #include <cassert>
 #include <string>
-#include "../common.h"
-#include "../LayeredNeural_Backprop_Floats/NeuralNetwork.h"
+#include "../../common.h"
+#include "../../LayeredNeural_Backprop_Floats/NeuralNetwork.h"
 
 class Robot{
 private:
