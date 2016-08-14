@@ -17,7 +17,8 @@ CC=g++
 
 # COMPILE (-c) into an .o object file, make debugging easier (-g)
 # and emit all warnings (-Wall), and use C++11 stl (-std=gnu++11)
-CFLAGS=-c -g -Wall -std=gnu++11
+# -MMD flag outputs .d dependency files next to the .o files.
+CFLAGS=-c -g -Wall -std=gnu++11 -MMD
 
 # LINK (default g++ action when invoked on .o files) - no options currently specified
 LDFLAGS=
@@ -38,35 +39,44 @@ EXECUTABLE=$(BUILD_DIR)/cppnn
 
 # The default goal is the first one in the Makefile. It depends on the main executable, of course
 .PHONY: all
-all: dirs depend $(EXECUTABLE)
+all: dirs $(EXECUTABLE)
 
-dirs: $(BUILD_DIR)
-	mkdir -p $(BUILD_DIR)
+# We have to make sure the build directory exists, of course, before putting things in it.
+# http://stackoverflow.com/a/4442521/1181387
+.PHONY: dirs
+dirs:
+	@mkdir -p $(BUILD_DIR)
 
-# Automatic collection of Include Dependencies
-# http://stackoverflow.com/a/2394651/1181387
-# Just an alias so we can call `make depend`.
-.PHONY: depend
-depend: dirs $(BUILD_DIR)/.depend
-# the .depend dependency file depends on all of the sources
-$(BUILD_DIR)/.depend: $(SRC)
-	# To create this file, we're going to clear away the old dependency list
-	rm -f $(BUILD_DIR)/.depend
-	# And output the dependencies of each file in $^ = $(SRC) to the file ./.depend
-	$(CC) $(CFLAGS) -MM $^ -MF $(BUILD_DIR)/.depend;	 
-		# e.g.: `g++ -std=gnu++11 -MM LayeredNeural_BackProp_Floats.cpp` outputs two lines:
-			# LayeredNeural_BackProp_Floats.o: LayeredNeural_BackProp_Floats.cpp \
-			#	../common.h Vectors.h NeuralNetwork.h AffineMatrix.h
-		# Usefully, this is in Make format and includes both the cpp file itself and the various .h files.
-# Now, next time you call `make` something, this line will include the correct dependencies list.
-include $(BUILD_DIR)/.depend
+# # Automatic collection of Include Dependencies
+# # http://stackoverflow.com/a/2394651/1181387
+# # Just an alias so we can call `make depend`.
+# .PHONY: depend
+# depend: dirs $(BUILD_DIR)/.depend
+# # the .depend dependency file depends on all of the sources
+# $(BUILD_DIR)/.depend: $(SRC)
+	# # To create this file, we're going to clear away the old dependency list
+	# rm -f $(BUILD_DIR)/.depend
+	# # And output the dependencies of each file in $^ = $(SRC) to the file ./.depend
+	# $(CC) $(CFLAGS) -MM $^ -MF $(BUILD_DIR)/.depend;	 
+		# # e.g.: `g++ -std=gnu++11 -MM LayeredNeural_BackProp_Floats.cpp` outputs two lines:
+			# # LayeredNeural_BackProp_Floats.o: LayeredNeural_BackProp_Floats.cpp \
+			# #	../common.h Vectors.h NeuralNetwork.h AffineMatrix.h
+		# # Usefully, this is in Make format and includes both the cpp file itself and the various .h files.
+# # Now, next time you call `make` something, this line will include the correct dependencies list.
+# include $(BUILD_DIR)/.depend
 
-# Now that we've collected our .o file dependency graph, we need to make sure the executable depends on all of the .o files
+# The executable depends on all of the .o files
 $(EXECUTABLE): $(OBJ)
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $(LDFLAGS) -o $@ $^
+
+# Each o file depends on its respective C++ file.
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CC) $(CFLAGS) -o $@ $<
 
 # Clean up stuff.
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
 
+# Well that's easier. http://stackoverflow.com/a/2908351/1181387
+-include $(OBJ:.o=.d)
