@@ -136,7 +136,7 @@ NeuralNetwork backprop(ostream& out, const size_t inputSize, const vector<size_t
 
 	//Backprop.
 	const size_t displayperiod = 1000;//How often to display the result of the backprop (every * backprops)
-	const size_t backprops = 10000;//Number of backpropagations. Proportional to overall time. (REMEMBER TO SWITCH TO RELEASE CONFIG FOR ~20x SPEED!)
+	const size_t backprops = 100000;//Number of backpropagations. Proportional to overall time. (REMEMBER TO SWITCH TO RELEASE CONFIG FOR ~20x SPEED!)
 	const double backpropAnnealingRate = 1.00001;//Different for different applications.
 
 	out << "BACKPROP" << endl

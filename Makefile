@@ -10,15 +10,22 @@
 #			- dynamically linked *.so/*.dll library, which will be linked at runtime (not compile-time)
 #	 ex*: build the example
 
+.DEFAULT_GOAL=all
+
 # Our C++ Compiler.
 # G++ is a "driver", which runs preprocessor (cpp), compiler (?), linker (ld), etc. as necessary.
 # g++ is just another name for gcc with libstdc++; gcc is "gnu compiler collection"
 CC=g++
 
-# COMPILE (-c) into an .o object file, make debugging easier (-g)
-# and emit all warnings (-Wall), and use C++11 stl (-std=gnu++11)
-# -MMD flag outputs .d dependency files next to the .o files.
-CFLAGS=-c -g -Wall -std=gnu++11 -MMD
+# COMPILE (-c) into an .o object file
+# optimize only if not affecting debug (-Og)
+# create more debug info only GDB can use (-g)
+# emit all warnings (-Wall)
+# use C++11 stl (-std=gnu++11)
+# output .d dependency files next to the .o files (-MMD)
+CFLAGS=-c -Og -g -Wall -std=gnu++11 -MMD
+# -Ofast and -g0 are good for speed. (-Ofast ignores some standards and possibly should be replaced with -O3)
+release: CFLAGS += -Ofast -g0
 
 # LINK (default g++ action when invoked on .o files) - no options currently specified
 LDFLAGS=
