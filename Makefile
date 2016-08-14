@@ -54,14 +54,14 @@ dirs:
 # depend: dirs $(BUILD_DIR)/.depend
 # # the .depend dependency file depends on all of the sources
 # $(BUILD_DIR)/.depend: $(SRC)
-	# # To create this file, we're going to clear away the old dependency list
-	# rm -f $(BUILD_DIR)/.depend
-	# # And output the dependencies of each file in $^ = $(SRC) to the file ./.depend
-	# $(CC) $(CFLAGS) -MM $^ -MF $(BUILD_DIR)/.depend;	 
-		# # e.g.: `g++ -std=gnu++11 -MM LayeredNeural_BackProp_Floats.cpp` outputs two lines:
-			# # LayeredNeural_BackProp_Floats.o: LayeredNeural_BackProp_Floats.cpp \
-			# #	../common.h Vectors.h NeuralNetwork.h AffineMatrix.h
-		# # Usefully, this is in Make format and includes both the cpp file itself and the various .h files.
+#	# To create this file, we're going to clear away the old dependency list
+#	rm -f $(BUILD_DIR)/.depend
+#	# And output the dependencies of each file in $^ = $(SRC) to the file ./.depend
+#	$(CC) $(CFLAGS) -MM $^ -MF $(BUILD_DIR)/.depend;	 
+#		# e.g.: `g++ -std=gnu++11 -MM LayeredNeural_BackProp_Floats.cpp` outputs two lines:
+#			# LayeredNeural_BackProp_Floats.o: LayeredNeural_BackProp_Floats.cpp \
+#			#	../common.h Vectors.h NeuralNetwork.h AffineMatrix.h
+#		# Usefully, this is in Make format and includes both the cpp file itself and the various .h files.
 # # Now, next time you call `make` something, this line will include the correct dependencies list.
 # include $(BUILD_DIR)/.depend
 

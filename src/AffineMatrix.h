@@ -2,7 +2,7 @@
 #include <functional>
 #include <cassert>
 #include <ostream>
-#include "../common.h"
+#include "common.h"
 #include "Vectors.h"
 
 template<typename T> class AffineMatrix{

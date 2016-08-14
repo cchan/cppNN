@@ -4,7 +4,7 @@
 #include <cassert>
 #include "Vectors.h"
 #include "AffineMatrix.h"
-#include "../common.h"
+#include "common.h"
 #include <sstream>
 
 

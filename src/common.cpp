@@ -20,9 +20,9 @@ std::string startTimestamp(time_t &startTime){
 	std::string out = "";
 	startTime = std::time(NULL);
 	char timeFormatStr[100];
-	struct tm timeinfo;
-	localtime_s(&timeinfo, &startTime);
-	if (std::strftime(timeFormatStr, sizeof(timeFormatStr), "%b %d, %Y %H:%M:%S", &timeinfo))
+	struct tm *timeinfo;
+	timeinfo = localtime(&startTime);
+	if (std::strftime(timeFormatStr, sizeof(timeFormatStr), "%b %d, %Y %H:%M:%S", timeinfo))
 		out += "Started execution: " + (std::string)timeFormatStr + "\n\n";
 	return out;
 }
@@ -30,9 +30,9 @@ std::string endTimestamp(time_t startTime){
 	std::string out = "";
 	time_t endTime = std::time(NULL);
 	char timeFormatStr[100];
-	struct tm timeinfo;
-	localtime_s(&timeinfo, &endTime);
-	if (std::strftime(timeFormatStr, sizeof(timeFormatStr), "%b %d, %Y %H:%M:%S", &timeinfo))
+	struct tm *timeinfo;
+	timeinfo = localtime(&endTime);
+	if (std::strftime(timeFormatStr, sizeof(timeFormatStr), "%b %d, %Y %H:%M:%S", timeinfo))
 		out += "\n\nCompleted execution: " + (std::string)timeFormatStr +"\n";
 	out += "Total execution time: " + std::to_string(endTime - startTime) + " seconds\n\n\n\n\n";
 	return out;

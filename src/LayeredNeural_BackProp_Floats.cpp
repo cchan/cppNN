@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iomanip>
 
-#include "../common.h"
+#include "common.h"
 #include "Vectors.h"
 #include "NeuralNetwork.h"
 
