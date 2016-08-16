@@ -23,9 +23,13 @@ CC=g++
 # emit all warnings (-Wall)
 # use C++11 stl (-std=gnu++11)
 # output .d dependency files next to the .o files (-MMD)
-CFLAGS=-c -Og -g -Wall -std=gnu++11 -MMD
+CFLAGS=-c -Og -g -DDEBUG -Wall -std=gnu++11 -MMD
 # -Ofast and -g0 are good for speed. (-Ofast ignores some standards and possibly should be replaced with -O3)
-release: CFLAGS += -Ofast -g0
+
+# Release mode.
+# Note that before building release, you must run clean, since no files have "changed".
+release: CFLAGS=-c -Ofast -g0 -Wall -std=gnu++11 -MMD
+release: all
 
 # LINK (default g++ action when invoked on .o files) - no options currently specified
 LDFLAGS=
