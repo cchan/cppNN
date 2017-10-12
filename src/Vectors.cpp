@@ -11,9 +11,18 @@ template<typename T> std::ostream& operator<<(std::ostream& os, const std::vecto
 	}
 	return os;
 }
-template std::ostream& operator<< <double>(std::ostream& os, const std::vector<double>& v);
-template std::ostream& operator<< <int>(std::ostream& os, const std::vector<int>& v);
-template std::ostream& operator<< <unsigned int>(std::ostream& os, const std::vector<unsigned int>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<double>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<float>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<char>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<short>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<int>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<long>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<long long>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<unsigned char>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<unsigned short>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<unsigned int>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<unsigned long>& v);
+template std::ostream& operator<< <>(std::ostream& os, const std::vector<unsigned long long>& v);
 
 
 std::vector<double> operator+(const std::vector<double>& a, const std::vector<double>& b){
