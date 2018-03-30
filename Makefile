@@ -23,7 +23,7 @@ CC=g++
 # emit all warnings (-Wall)
 # use C++11 stl (-std=gnu++11)
 # output .d dependency files next to the .o files (-MMD)
-CFLAGS=-c -Og -g -DDEBUG -Wall -std=gnu++11 -MMD
+CFLAGS=-c -Og -g -DDEBUG -Wall -std=gnu++11 -MMD -ftree-vectorize -ftree-vectorizer-verbose=1
 # -Ofast and -g0 are good for speed. (-Ofast ignores some standards and possibly should be replaced with -O3)
 
 # Release mode.

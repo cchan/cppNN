@@ -1,5 +1,16 @@
 # cppNN
 
+This is a relatively old project that has been superseded by [cppNN2](https://github.com/cchan/cppNN2).
+It's left here for fun.
+
+
+## Build instructions
+
+Run `make` in the main directory. (You'll need C++11 support)
+
+
+## Old intro
+
 Originally created for Lexington High School Science Fair 2015.
 A neural network library written from scratch, and associated attempts to train it.
 
